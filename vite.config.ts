@@ -4,6 +4,9 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
+  // Use environment variable from process.env (GitHub Actions) or from .env file (local)
+  const apiKey = process.env.GEMINI_API_KEY || env.GEMINI_API_KEY;
+
   return {
     base: '/Analise-e-deletar-imagens/',
     server: {
@@ -12,8 +15,8 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [react()],
     define: {
-      'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+      'process.env.API_KEY': JSON.stringify(apiKey),
+      'process.env.GEMINI_API_KEY': JSON.stringify(apiKey)
     },
     resolve: {
       alias: {
