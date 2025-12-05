@@ -55,7 +55,7 @@ export const analyzeFolderImages = async (
   folderName: string,
   files: File[]
 ): Promise<AIAnalysisResult> => {
-  if (!process.env.API_KEY) {
+  if (!process.env.GEMINI_API_KEY) {
     console.error("API Key is missing in process.env");
     return {
       folderName,
@@ -82,7 +82,7 @@ export const analyzeFolderImages = async (
   const processedFiles = imageFiles.slice(0, 6);
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
     const prompt = `
       Você é um auditor de obras da Eletromidia.
