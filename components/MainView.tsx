@@ -1,11 +1,14 @@
-import React from 'react';
-import { Folder, Image as ImageIcon, CheckCircle2, AlertCircle, Clock, File, Trash2 } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Folder, Image as ImageIcon, CheckCircle2, AlertCircle, Clock, File, Trash2, Square, CheckSquare } from 'lucide-react';
 import { FolderItem, FileItem, ItemType, AnalysisStatus } from '../types';
+import ImageLightbox from './ImageLightbox';
 
 interface MainViewProps {
   items: (FolderItem | FileItem)[];
   onNavigate: (item: FolderItem) => void;
   onDeleteFolder?: (folderPath: string) => void;
+  onToggleFolderSelection?: (folderPath: string) => void;
+  selectedFolders?: Set<string>;
   currentFolderStatus?: AnalysisStatus;
   currentFolderReason?: string;
 }
@@ -46,7 +49,17 @@ const StatusBadge = ({ status }: { status: AnalysisStatus }) => {
   }
 };
 
-const MainView: React.FC<MainViewProps> = ({ items, onNavigate, onDeleteFolder, currentFolderStatus, currentFolderReason }) => {
+const MainView: React.FC<MainViewProps> = ({
+  items,
+  onNavigate,
+  onDeleteFolder,
+  onToggleFolderSelection,
+  selectedFolders,
+  currentFolderStatus,
+  currentFolderReason
+}) => {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const sortedItems = [...items].sort((a, b) => {
     if (a.type === ItemType.FOLDER && b.type !== ItemType.FOLDER) return -1;
@@ -54,10 +67,30 @@ const MainView: React.FC<MainViewProps> = ({ items, onNavigate, onDeleteFolder, 
     return a.name.localeCompare(b.name);
   });
 
+  const imageItems = useMemo(() =>
+    sortedItems.filter(item => item.type === ItemType.IMAGE && item.url) as FileItem[],
+    [sortedItems]
+  );
+
   const handleDelete = (e: React.MouseEvent, folderPath: string) => {
     e.stopPropagation();
     if (onDeleteFolder) {
       onDeleteFolder(folderPath);
+    }
+  };
+
+  const handleToggleSelect = (e: React.MouseEvent, folderPath: string) => {
+    e.stopPropagation();
+    if (onToggleFolderSelection) {
+      onToggleFolderSelection(folderPath);
+    }
+  };
+
+  const handleImageClick = (item: FileItem) => {
+    const index = imageItems.findIndex(img => img.path === item.path);
+    if (index !== -1) {
+      setLightboxIndex(index);
+      setLightboxOpen(true);
     }
   };
 
@@ -90,6 +123,11 @@ const MainView: React.FC<MainViewProps> = ({ items, onNavigate, onDeleteFolder, 
           <div className="col-span-2 text-right">Ações</div>
         </div>
 
+        {/* Mobile Header */}
+        <div className="sm:hidden px-4 py-2 bg-gray-50/80 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          Itens
+        </div>
+
         {/* Content */}
         <div className="divide-y divide-gray-100">
           {sortedItems.length === 0 && (
@@ -101,16 +139,27 @@ const MainView: React.FC<MainViewProps> = ({ items, onNavigate, onDeleteFolder, 
 
           {sortedItems.map((item, idx) => {
             const isFolder = item.type === ItemType.FOLDER;
-            const isSelected = item.selectedByAI;
+            const isImage = item.type === ItemType.IMAGE;
+            const isSelected = !isFolder && (item as FileItem).selectedByAI;
+            const folderItem = item as FolderItem;
+            const isFolderSelected = isFolder && selectedFolders?.has(folderItem.path);
+            const isCompleted = isFolder && folderItem.status === AnalysisStatus.COMPLETED;
 
             return (
               <div
                 key={item.path + idx}
-                onClick={() => isFolder ? onNavigate(item as FolderItem) : null}
+                onClick={() => {
+                  if (isFolder) {
+                    onNavigate(item as FolderItem);
+                  } else if (isImage && item.url) {
+                    handleImageClick(item as FileItem);
+                  }
+                }}
                 className={`
                   p-3 sm:p-4 lg:px-6 lg:py-3 transition-colors
                   ${isFolder ? 'cursor-pointer hover:bg-gray-50 active:bg-gray-100' : ''}
                   ${isSelected ? 'bg-green-50/60' : ''}
+                  ${isFolderSelected ? 'bg-blue-50/60 border-l-4 border-l-blue-400' : ''}
                 `}
               >
                 {/* Mobile/Tablet Layout */}
@@ -225,6 +274,14 @@ const MainView: React.FC<MainViewProps> = ({ items, onNavigate, onDeleteFolder, 
           })}
         </div>
       </div>
+
+      {/* Image Lightbox */}
+      <ImageLightbox
+        images={imageItems}
+        initialIndex={lightboxIndex}
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+      />
     </div>
   );
 };

@@ -167,6 +167,32 @@ const App = () => {
     return folders;
   };
 
+  // ---- FOLDER SELECTION ----
+  const handleToggleFolderSelection = (folderPath: string) => {
+    setSelectedFolders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(folderPath)) {
+        newSet.delete(folderPath);
+      } else {
+        newSet.add(folderPath);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAllFolders = () => {
+    if (!rootFolder) return;
+    const subfolders = getAllSubfolders(rootFolder);
+    const uncompletedPaths = subfolders
+      .filter(f => f.status !== AnalysisStatus.COMPLETED)
+      .map(f => f.path);
+    setSelectedFolders(new Set(uncompletedPaths));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedFolders(new Set());
+  };
+
   // ---- FOLDER DELETION ----
   const handleDeleteFolder = (folderPath: string) => {
     if (!rootFolder) return;
@@ -235,24 +261,39 @@ const App = () => {
     if (!rootFolder) return;
     setIsProcessing(true);
     setErrorMessage(null);
+    setShowProgress(true);
+    setProgressMinimized(false);
+    setProcessedCount(0);
+    setCompletedCount(0);
+    setPendingResultCount(0);
 
     const subfolders = getAllSubfolders(rootFolder);
 
-    // Filter out already COMPLETED folders - only process PENDING, UNCHECKED, or ERROR
-    const foldersToProcess = subfolders.filter(
-      f => f.status !== AnalysisStatus.COMPLETED
-    );
+    // If folders are selected, only process those. Otherwise, process all non-completed.
+    let foldersToProcess: FolderItem[];
+    if (selectedFolders.size > 0) {
+      foldersToProcess = subfolders.filter(f => selectedFolders.has(f.path) && f.status !== AnalysisStatus.COMPLETED);
+    } else {
+      foldersToProcess = subfolders.filter(f => f.status !== AnalysisStatus.COMPLETED);
+    }
 
+    setTotalToAnalyze(foldersToProcess.length);
     setPendingCount(foldersToProcess.length);
 
     if (foldersToProcess.length === 0) {
       setErrorMessage("Todas as pastas já foram analisadas e estão concluídas.");
       setIsProcessing(false);
+      setShowProgress(false);
       return;
     }
 
     try {
+      let localCompleted = 0;
+      let localPending = 0;
+
       for (const folder of foldersToProcess) {
+        setCurrentAnalyzingFolder(folder.name);
+
         try {
           const imageFiles = folder.children
             .filter(c => c.type === ItemType.IMAGE && (c as FileItem).fileObject)
@@ -268,14 +309,25 @@ const App = () => {
 
             const finalStatus = result.status === 'COMPLETED' ? AnalysisStatus.COMPLETED : AnalysisStatus.PENDING;
             refreshTree(folder.path, finalStatus, result.reason, result.selectedFiles);
+
+            if (finalStatus === AnalysisStatus.COMPLETED) {
+              localCompleted++;
+            } else {
+              localPending++;
+            }
           } else {
             refreshTree(folder.path, AnalysisStatus.PENDING, "Pasta sem imagens", []);
+            localPending++;
           }
         } catch (innerError) {
           console.error(`Failed to analyze folder ${folder.name}`, innerError);
           refreshTree(folder.path, AnalysisStatus.ERROR, "Erro ao processar pasta", []);
+          localPending++;
         }
 
+        setProcessedCount(prev => prev + 1);
+        setCompletedCount(localCompleted);
+        setPendingResultCount(localPending);
         setPendingCount(prev => Math.max(0, prev - 1));
       }
     } catch (error) {
@@ -283,6 +335,8 @@ const App = () => {
       setErrorMessage("Erro crítico ao executar análise. Verifique se as imagens não são grandes demais.");
     } finally {
       setIsProcessing(false);
+      setCurrentAnalyzingFolder('');
+      setSelectedFolders(new Set()); // Clear selection after analysis
     }
   };
 
@@ -405,7 +459,7 @@ const App = () => {
   };
 
   // ---- EXPORT SELECTED PHOTOS AS ZIP ----
-  const handleExportSelectedPhotosZip = async () => {
+  const handleExportSelectedPhotosZip = async (statuses: AnalysisStatus[] = [AnalysisStatus.COMPLETED]) => {
     if (!rootFolder) return;
 
     setIsProcessing(true);
@@ -422,8 +476,8 @@ const App = () => {
       for (const folder of subfolders) {
         console.log(`Folder: ${folder.name}, Status: ${folder.status}`);
 
-        // Only process COMPLETED folders
-        if (folder.status !== AnalysisStatus.COMPLETED) continue;
+        // Filter by selected statuses
+        if (!statuses.includes(folder.status)) continue;
 
         completedFolders++;
 
@@ -543,8 +597,12 @@ const App = () => {
         onExportReport={handleExportReport}
         onExportSelectedZip={handleExportSelectedPhotosZip}
         onDeleteEmptyFolders={handleDeleteEmptyFolders}
+        onSelectAll={handleSelectAllFolders}
+        onClearSelection={handleClearSelection}
         isProcessing={isProcessing}
         totalPending={pendingCount}
+        selectedCount={selectedFolders.size}
+        totalFolders={rootFolder ? countFolders(rootFolder) : 0}
       />
 
       {errorMessage && (
@@ -560,10 +618,26 @@ const App = () => {
           items={activeFolder.children}
           onNavigate={handleNavigate}
           onDeleteFolder={handleDeleteFolder}
+          onToggleFolderSelection={handleToggleFolderSelection}
+          selectedFolders={selectedFolders}
           currentFolderStatus={activeFolder.status}
           currentFolderReason={activeFolder.analysisSummary}
         />
       </div>
+
+      {/* Progress Panel */}
+      <AnalysisProgressPanel
+        isVisible={showProgress}
+        isProcessing={isProcessing}
+        currentFolder={currentAnalyzingFolder}
+        totalFolders={totalToAnalyze}
+        processedCount={processedCount}
+        completedCount={completedCount}
+        pendingCount={pendingResultCount}
+        onClose={() => setShowProgress(false)}
+        onToggle={() => setProgressMinimized(!progressMinimized)}
+        isMinimized={progressMinimized}
+      />
 
       <input
         type="file"
