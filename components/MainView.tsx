@@ -1,11 +1,14 @@
-import React from 'react';
-import { Folder, Image as ImageIcon, CheckCircle2, AlertCircle, Clock, File, Trash2 } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Folder, Image as ImageIcon, CheckCircle2, AlertCircle, Clock, File, Trash2, Square, CheckSquare } from 'lucide-react';
 import { FolderItem, FileItem, ItemType, AnalysisStatus } from '../types';
+import ImageLightbox from './ImageLightbox';
 
 interface MainViewProps {
   items: (FolderItem | FileItem)[];
   onNavigate: (item: FolderItem) => void;
   onDeleteFolder?: (folderPath: string) => void;
+  onToggleFolderSelection?: (folderPath: string) => void;
+  selectedFolders?: Set<string>;
   currentFolderStatus?: AnalysisStatus;
   currentFolderReason?: string;
 }
@@ -23,7 +26,17 @@ const StatusBadge = ({ status }: { status: AnalysisStatus }) => {
   }
 };
 
-const MainView: React.FC<MainViewProps> = ({ items, onNavigate, onDeleteFolder, currentFolderStatus, currentFolderReason }) => {
+const MainView: React.FC<MainViewProps> = ({
+  items,
+  onNavigate,
+  onDeleteFolder,
+  onToggleFolderSelection,
+  selectedFolders,
+  currentFolderStatus,
+  currentFolderReason
+}) => {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const sortedItems = [...items].sort((a, b) => {
     if (a.type === ItemType.FOLDER && b.type !== ItemType.FOLDER) return -1;
@@ -31,40 +44,66 @@ const MainView: React.FC<MainViewProps> = ({ items, onNavigate, onDeleteFolder, 
     return a.name.localeCompare(b.name);
   });
 
+  const imageItems = useMemo(() =>
+    sortedItems.filter(item => item.type === ItemType.IMAGE && item.url) as FileItem[],
+    [sortedItems]
+  );
+
   const handleDelete = (e: React.MouseEvent, folderPath: string) => {
-    e.stopPropagation(); // Prevent navigation
+    e.stopPropagation();
     if (onDeleteFolder) {
       onDeleteFolder(folderPath);
     }
   };
 
+  const handleToggleSelect = (e: React.MouseEvent, folderPath: string) => {
+    e.stopPropagation();
+    if (onToggleFolderSelection) {
+      onToggleFolderSelection(folderPath);
+    }
+  };
+
+  const handleImageClick = (item: FileItem) => {
+    const index = imageItems.findIndex(img => img.path === item.path);
+    if (index !== -1) {
+      setLightboxIndex(index);
+      setLightboxOpen(true);
+    }
+  };
+
   return (
-    <div className="flex-1 bg-[#F8F9FA] overflow-y-auto p-6">
+    <div className="flex-1 bg-[#F8F9FA] overflow-y-auto p-4 sm:p-6">
 
       {/* AI Summary Banner */}
       {currentFolderReason && (
-        <div className={`mb-6 p-4 rounded-xl border flex items-start shadow-sm
+        <div className={`mb-4 sm:mb-6 p-3 sm:p-4 rounded-xl border flex items-start shadow-sm
           ${currentFolderStatus === AnalysisStatus.COMPLETED
             ? 'bg-green-50/50 border-green-200'
             : 'bg-white border-gray-200'}
         `}>
-          <div className={`p-2 rounded-lg mr-4 ${currentFolderStatus === AnalysisStatus.COMPLETED ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>
+          <div className={`p-2 rounded-lg mr-3 sm:mr-4 ${currentFolderStatus === AnalysisStatus.COMPLETED ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>
             {currentFolderStatus === AnalysisStatus.COMPLETED ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
           </div>
-          <div>
+          <div className="min-w-0">
             <h3 className="font-semibold text-gray-800 text-sm">Resumo da Análise</h3>
-            <p className="text-gray-600 text-sm mt-1">{currentFolderReason}</p>
+            <p className="text-gray-600 text-xs sm:text-sm mt-1 break-words">{currentFolderReason}</p>
           </div>
         </div>
       )}
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {/* Header */}
-        <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50/80 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          <div className="col-span-5">Nome</div>
+        {/* Header - responsive */}
+        <div className="hidden sm:grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50/80 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          <div className="col-span-1">Sel.</div>
+          <div className="col-span-4">Nome</div>
           <div className="col-span-3">Status</div>
           <div className="col-span-2 text-right">Tipo</div>
           <div className="col-span-2 text-right">Ações</div>
+        </div>
+
+        {/* Mobile Header */}
+        <div className="sm:hidden px-4 py-2 bg-gray-50/80 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          Itens
         </div>
 
         {/* Content */}
@@ -78,27 +117,77 @@ const MainView: React.FC<MainViewProps> = ({ items, onNavigate, onDeleteFolder, 
 
           {sortedItems.map((item, idx) => {
             const isFolder = item.type === ItemType.FOLDER;
-            const isSelected = item.selectedByAI;
+            const isImage = item.type === ItemType.IMAGE;
+            const isSelected = !isFolder && (item as FileItem).selectedByAI;
+            const folderItem = item as FolderItem;
+            const isFolderSelected = isFolder && selectedFolders?.has(folderItem.path);
+            const isCompleted = isFolder && folderItem.status === AnalysisStatus.COMPLETED;
 
             return (
               <div
                 key={item.path + idx}
-                onClick={() => isFolder ? onNavigate(item as FolderItem) : null}
+                onClick={() => {
+                  if (isFolder) {
+                    onNavigate(item as FolderItem);
+                  } else if (isImage && item.url) {
+                    handleImageClick(item as FileItem);
+                  }
+                }}
                 className={`
-                  grid grid-cols-12 gap-4 items-center px-6 py-3 text-sm transition-colors
-                  ${isFolder ? 'cursor-pointer hover:bg-gray-50' : ''}
+                  flex sm:grid sm:grid-cols-12 gap-2 sm:gap-4 items-center px-4 sm:px-6 py-3 text-sm transition-colors
+                  ${isFolder || isImage ? 'cursor-pointer hover:bg-gray-50' : ''}
                   ${isSelected ? 'bg-green-50/60' : ''}
+                  ${isFolderSelected ? 'bg-blue-50/60 border-l-4 border-l-blue-400' : ''}
                 `}
               >
+                {/* Selection Checkbox - Desktop */}
+                <div className="hidden sm:block col-span-1">
+                  {isFolder && !isCompleted && onToggleFolderSelection && (
+                    <button
+                      onClick={(e) => handleToggleSelect(e, folderItem.path)}
+                      className={`p-1 rounded transition-colors ${isFolderSelected
+                        ? 'text-blue-600 hover:text-blue-800'
+                        : 'text-gray-400 hover:text-gray-600'
+                        }`}
+                      title={isFolderSelected ? 'Desmarcar' : 'Selecionar para análise'}
+                    >
+                      {isFolderSelected ? (
+                        <CheckSquare className="w-5 h-5" />
+                      ) : (
+                        <Square className="w-5 h-5" />
+                      )}
+                    </button>
+                  )}
+                  {isFolder && isCompleted && (
+                    <CheckCircle2 className="w-5 h-5 text-green-500" />
+                  )}
+                </div>
+
+                {/* Mobile: Checkbox */}
+                <div className="sm:hidden flex-shrink-0">
+                  {isFolder && !isCompleted && onToggleFolderSelection && (
+                    <button
+                      onClick={(e) => handleToggleSelect(e, folderItem.path)}
+                      className={`p-1 rounded ${isFolderSelected ? 'text-blue-600' : 'text-gray-400'}`}
+                    >
+                      {isFolderSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                    </button>
+                  )}
+                  {isFolder && isCompleted && <CheckCircle2 className="w-5 h-5 text-green-500" />}
+                </div>
+
                 {/* Name */}
-                <div className="col-span-5 flex items-center min-w-0">
-                  <div className="mr-3 flex-shrink-0">
+                <div className="flex-1 sm:col-span-4 flex items-center min-w-0">
+                  <div className="mr-2 sm:mr-3 flex-shrink-0">
                     {isFolder ? (
-                      <Folder className="w-5 h-5 text-[#FF4D00] fill-orange-100" />
+                      <Folder className={`w-5 h-5 ${isFolderSelected ? 'text-blue-500 fill-blue-100' : 'text-[#FF4D00] fill-orange-100'}`} />
                     ) : item.type === ItemType.IMAGE ? (
-                      <div className="relative group-hover:scale-105 transition-transform">
+                      <div className="relative group">
                         {item.url ? (
-                          <img src={item.url} className={`w-10 h-10 object-cover rounded-lg border ${isSelected ? 'border-green-400 shadow-sm' : 'border-gray-200'}`} />
+                          <img
+                            src={item.url}
+                            className={`w-8 h-8 sm:w-10 sm:h-10 object-cover rounded-lg border transition-transform group-hover:scale-105 ${isSelected ? 'border-green-400 shadow-sm' : 'border-gray-200'}`}
+                          />
                         ) : (
                           <ImageIcon className="w-5 h-5 text-gray-400" />
                         )}
@@ -113,28 +202,34 @@ const MainView: React.FC<MainViewProps> = ({ items, onNavigate, onDeleteFolder, 
                     )}
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className={`truncate font-medium ${isSelected ? 'text-green-800' : 'text-gray-700'}`}>
+                    <span className={`truncate font-medium text-xs sm:text-sm ${isSelected ? 'text-green-800' : isFolderSelected ? 'text-blue-800' : 'text-gray-700'}`}>
                       {item.name}
                     </span>
-                    {isSelected && <span className="text-[10px] text-green-600 font-semibold uppercase tracking-wide">Selecionado para Relatório</span>}
+                    {isSelected && <span className="text-[10px] text-green-600 font-semibold uppercase tracking-wide hidden sm:block">Selecionado</span>}
+                    {isFolderSelected && <span className="text-[10px] text-blue-600 font-semibold uppercase tracking-wide hidden sm:block">Para Análise</span>}
                   </div>
                 </div>
 
-                {/* Status */}
-                <div className="col-span-3">
-                  {isFolder && <StatusBadge status={(item as FolderItem).status} />}
+                {/* Status - Desktop */}
+                <div className="hidden sm:block col-span-3">
+                  {isFolder && <StatusBadge status={folderItem.status} />}
                 </div>
 
-                {/* Type/Meta */}
-                <div className="col-span-2 text-right text-gray-400 text-xs">
+                {/* Mobile Status */}
+                <div className="sm:hidden flex-shrink-0">
+                  {isFolder && <StatusBadge status={folderItem.status} />}
+                </div>
+
+                {/* Type/Meta - Desktop Only */}
+                <div className="hidden sm:block col-span-2 text-right text-gray-400 text-xs">
                   {isFolder ? 'Pasta' : 'Imagem'}
                 </div>
 
                 {/* Actions */}
-                <div className="col-span-2 text-right">
+                <div className="flex-shrink-0 sm:col-span-2 sm:text-right">
                   {isFolder && onDeleteFolder && (
                     <button
-                      onClick={(e) => handleDelete(e, (item as FolderItem).path)}
+                      onClick={(e) => handleDelete(e, folderItem.path)}
                       className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       title="Excluir pasta"
                     >
@@ -147,6 +242,14 @@ const MainView: React.FC<MainViewProps> = ({ items, onNavigate, onDeleteFolder, 
           })}
         </div>
       </div>
+
+      {/* Image Lightbox */}
+      <ImageLightbox
+        images={imageItems}
+        initialIndex={lightboxIndex}
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+      />
     </div>
   );
 };
