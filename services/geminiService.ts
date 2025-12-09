@@ -51,9 +51,12 @@ const resizeAndEncodeImage = (file: File): Promise<string> => {
   });
 };
 
+export type GeminiModel = 'gemini-2.0-flash' | 'gemini-2.0-flash-lite';
+
 export const analyzeFolderImages = async (
   folderName: string,
-  files: File[]
+  files: File[],
+  model: GeminiModel = 'gemini-2.0-flash'
 ): Promise<AIAnalysisResult> => {
   if (!process.env.GEMINI_API_KEY) {
     console.error("API Key is missing in process.env");
@@ -131,7 +134,7 @@ export const analyzeFolderImages = async (
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: model,
       contents: {
         role: 'user',
         parts: parts
