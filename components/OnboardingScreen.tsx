@@ -333,13 +333,13 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                         >
                             {/* Desktop logo */}
                             <img
-                                src="./assets/ELETRO-DESKTOP.png"
+                                src="/assets/ELETRO-DESKTOP.png"
                                 alt="Eletromidia"
                                 className="hidden sm:block h-10 sm:h-11"
                             />
                             {/* Mobile logo */}
                             <img
-                                src="./assets/ELETRO-MOBILE.png"
+                                src="/assets/ELETRO-MOBILE.png"
                                 alt="Eletromidia"
                                 className="block sm:hidden h-8"
                             />

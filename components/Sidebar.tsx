@@ -20,7 +20,7 @@ const Sidebar = () => {
       {/* Brand Header */}
       <div className="h-14 lg:h-16 flex items-center px-4 lg:px-6 border-b border-[#2A2A2A]">
         <img
-          src="./assets/ELETRO-DESKTOP.png"
+          src="/assets/ELETRO-DESKTOP.png"
           alt="Eletromidia"
           className="h-8 lg:h-9"
         />
