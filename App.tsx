@@ -9,6 +9,7 @@ import { AlertTriangle } from 'lucide-react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import ExcelJS from 'exceljs';
+import AnalysisProgressPanel from './components/AnalysisProgressPanel';
 
 const App = () => {
   const [rootFolder, setRootFolder] = useState<FolderItem | null>(null);
@@ -18,6 +19,16 @@ const App = () => {
   const [pendingCount, setPendingCount] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<GeminiModel>('gemini-flash-latest');
+
+  // Missing states added to fix ReferenceErrors
+  const [selectedFolders, setSelectedFolders] = useState<Set<string>>(new Set());
+  const [showProgress, setShowProgress] = useState(false);
+  const [progressMinimized, setProgressMinimized] = useState(false);
+  const [processedCount, setProcessedCount] = useState(0);
+  const [completedCount, setCompletedCount] = useState(0);
+  const [pendingResultCount, setPendingResultCount] = useState(0);
+  const [totalToAnalyze, setTotalToAnalyze] = useState(0);
+  const [currentAnalyzingFolder, setCurrentAnalyzingFolder] = useState<string>('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
