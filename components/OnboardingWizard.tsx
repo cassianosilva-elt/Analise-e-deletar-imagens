@@ -40,7 +40,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, totalSteps }
 const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
     const [currentStep, setCurrentStep] = useState(0);
     const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
-    const [selectedModel, setSelectedModel] = useState<AIModelType>('gemini-2.0-flash');
+    const [selectedModel, setSelectedModel] = useState<AIModelType>('gemini-flash-latest');
     const [folderCount, setFolderCount] = useState(0);
     const [fileCount, setFileCount] = useState(0);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -144,17 +144,17 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
                         <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-xl mx-auto">
                             {/* Flash Model */}
                             <button
-                                onClick={() => setSelectedModel('gemini-2.0-flash')}
+                                onClick={() => setSelectedModel('gemini-flash-latest')}
                                 className={`
                   flex-1 p-6 rounded-2xl border-2 transition-all text-left
-                  ${selectedModel === 'gemini-2.0-flash'
+                  ${selectedModel === 'gemini-flash-latest'
                                         ? 'border-[#FF4D00] bg-orange-50 shadow-lg shadow-orange-500/10'
                                         : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'}
                 `}
                             >
                                 <div className="flex items-center gap-3 mb-3">
-                                    <div className={`p-2 rounded-lg ${selectedModel === 'gemini-2.0-flash' ? 'bg-[#FF4D00]' : 'bg-gray-200'}`}>
-                                        <Zap className={`w-5 h-5 ${selectedModel === 'gemini-2.0-flash' ? 'text-white' : 'text-gray-600'}`} />
+                                    <div className={`p-2 rounded-lg ${selectedModel === 'gemini-flash-latest' ? 'bg-[#FF4D00]' : 'bg-gray-200'}`}>
+                                        <Zap className={`w-5 h-5 ${selectedModel === 'gemini-flash-latest' ? 'text-white' : 'text-gray-600'}`} />
                                     </div>
                                     <div>
                                         <h3 className="font-bold text-gray-900">Gemini Flash</h3>
@@ -164,7 +164,7 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
                                 <p className="text-sm text-gray-600">
                                     Análise balanceada com alta precisão. Ideal para a maioria dos casos.
                                 </p>
-                                {selectedModel === 'gemini-2.0-flash' && (
+                                {selectedModel === 'gemini-flash-latest' && (
                                     <div className="mt-3 flex items-center gap-2 text-[#FF4D00] text-sm font-medium">
                                         <Check className="w-4 h-4" />
                                         Selecionado
@@ -174,17 +174,17 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
 
                             {/* Flash Lite Model */}
                             <button
-                                onClick={() => setSelectedModel('gemini-2.0-flash-lite')}
+                                onClick={() => setSelectedModel('gemini-flash-lite-latest')}
                                 className={`
                   flex-1 p-6 rounded-2xl border-2 transition-all text-left
-                  ${selectedModel === 'gemini-2.0-flash-lite'
+                  ${selectedModel === 'gemini-flash-lite-latest'
                                         ? 'border-[#FF4D00] bg-orange-50 shadow-lg shadow-orange-500/10'
                                         : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'}
                 `}
                             >
                                 <div className="flex items-center gap-3 mb-3">
-                                    <div className={`p-2 rounded-lg ${selectedModel === 'gemini-2.0-flash-lite' ? 'bg-[#FF4D00]' : 'bg-gray-200'}`}>
-                                        <Zap className={`w-5 h-5 ${selectedModel === 'gemini-2.0-flash-lite' ? 'text-white' : 'text-gray-600'}`} />
+                                    <div className={`p-2 rounded-lg ${selectedModel === 'gemini-flash-lite-latest' ? 'bg-[#FF4D00]' : 'bg-gray-200'}`}>
+                                        <Zap className={`w-5 h-5 ${selectedModel === 'gemini-flash-lite-latest' ? 'text-white' : 'text-gray-600'}`} />
                                     </div>
                                     <div>
                                         <h3 className="font-bold text-gray-900">Gemini Flash Lite</h3>
@@ -194,7 +194,7 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
                                 <p className="text-sm text-gray-600">
                                     Análise mais rápida com menor custo. Bom para volumes grandes.
                                 </p>
-                                {selectedModel === 'gemini-2.0-flash-lite' && (
+                                {selectedModel === 'gemini-flash-lite-latest' && (
                                     <div className="mt-3 flex items-center gap-2 text-[#FF4D00] text-sm font-medium">
                                         <Check className="w-4 h-4" />
                                         Selecionado
@@ -232,7 +232,7 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
                                 <div className="flex items-center justify-between py-2">
                                     <span className="text-gray-600">Modelo de IA</span>
                                     <span className="font-bold text-[#FF4D00]">
-                                        {selectedModel === 'gemini-2.0-flash' ? 'Gemini Flash' : 'Gemini Flash Lite'}
+                                        {selectedModel === 'gemini-flash-latest' ? 'Gemini Flash' : 'Gemini Flash Lite'}
                                     </span>
                                 </div>
                             </div>

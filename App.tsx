@@ -3,7 +3,6 @@ import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import MainView from './components/MainView';
 import OnboardingScreen from './components/OnboardingScreen';
-import AnalysisProgressPanel from './components/AnalysisProgressPanel';
 import { Breadcrumb, FolderItem, FileItem, ItemType, AnalysisStatus } from './types';
 import { analyzeFolderImages, GeminiModel } from './services/geminiService';
 import { AlertTriangle } from 'lucide-react';
@@ -18,19 +17,7 @@ const App = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [selectedModel, setSelectedModel] = useState<GeminiModel>('gemini-2.0-flash');
-
-  // Folder selection state
-  const [selectedFolders, setSelectedFolders] = useState<Set<string>>(new Set());
-
-  // Progress panel state
-  const [showProgress, setShowProgress] = useState(false);
-  const [progressMinimized, setProgressMinimized] = useState(false);
-  const [currentAnalyzingFolder, setCurrentAnalyzingFolder] = useState('');
-  const [totalToAnalyze, setTotalToAnalyze] = useState(0);
-  const [processedCount, setProcessedCount] = useState(0);
-  const [completedCount, setCompletedCount] = useState(0);
-  const [pendingResultCount, setPendingResultCount] = useState(0);
+  const [selectedModel, setSelectedModel] = useState<GeminiModel>('gemini-flash-latest');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 

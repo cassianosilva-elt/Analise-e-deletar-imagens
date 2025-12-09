@@ -56,7 +56,7 @@ export type GeminiModel = 'gemini-flash-latest' | 'gemini-flash-lite-latest';
 export const analyzeFolderImages = async (
   folderName: string,
   files: File[],
-  model: GeminiModel = 'gemini-2.0-flash'
+  model: GeminiModel = 'gemini-flash-latest'
 ): Promise<AIAnalysisResult> => {
   if (!process.env.GEMINI_API_KEY) {
     console.error("API Key is missing in process.env");

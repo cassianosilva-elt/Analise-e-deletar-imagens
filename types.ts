@@ -13,7 +13,7 @@ export enum AnalysisStatus {
 }
 
 // AI Model Types
-export type AIModelType = 'gemini-2.0-flash' | 'gemini-2.0-flash-lite';
+export type AIModelType = 'gemini-flash-latest' | 'gemini-flash-lite-latest';
 
 export interface FileItem {
   name: string;

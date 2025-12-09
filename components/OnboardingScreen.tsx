@@ -142,7 +142,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
 
     const models = [
         {
-            id: 'gemini-2.0-flash' as GeminiModel,
+            id: 'gemini-flash-latest' as GeminiModel,
             name: 'Gemini Flash',
             subtitle: 'Recomendado',
             description: 'Alta precisão na identificação de abrigos',
@@ -150,7 +150,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
             recommended: true
         },
         {
-            id: 'gemini-2.0-flash-lite' as GeminiModel,
+            id: 'gemini-flash-lite-latest' as GeminiModel,
             name: 'Gemini Flash Lite',
             subtitle: 'Rápido',
             description: 'Ideal para grandes volumes de análise',
@@ -333,13 +333,13 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                         >
                             {/* Desktop logo */}
                             <img
-                                src="/assets/ELETRO-DESKTOP.png"
+                                src="./assets/ELETRO-DESKTOP.png"
                                 alt="Eletromidia"
                                 className="hidden sm:block h-10 sm:h-11"
                             />
                             {/* Mobile logo */}
                             <img
-                                src="/assets/ELETRO-MOBILE.png"
+                                src="./assets/ELETRO-MOBILE.png"
                                 alt="Eletromidia"
                                 className="block sm:hidden h-8"
                             />
@@ -672,7 +672,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                                                         animate={{ rotate: [0, 5, -5, 0] }}
                                                         transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
                                                     >
-                                                        {selectedModel === 'gemini-2.0-flash' ? (
+                                                        {selectedModel === 'gemini-flash-latest' ? (
                                                             <Sparkles className="w-5 h-5 text-white" />
                                                         ) : (
                                                             <Zap className="w-5 h-5 text-white" />
@@ -680,10 +680,10 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                                                     </motion.div>
                                                     <div className="flex-1 min-w-0">
                                                         <p className="text-sm font-medium text-gray-900">
-                                                            Modelo: {selectedModel === 'gemini-2.0-flash' ? 'Gemini Flash' : 'Gemini Flash Lite'}
+                                                            Modelo: {selectedModel === 'gemini-flash-latest' ? 'Gemini Flash' : 'Gemini Flash Lite'}
                                                         </p>
                                                         <p className="text-xs text-gray-500">
-                                                            {selectedModel === 'gemini-2.0-flash' ? 'Alta precisão' : 'Processamento rápido'}
+                                                            {selectedModel === 'gemini-flash-latest' ? 'Alta precisão' : 'Processamento rápido'}
                                                         </p>
                                                     </div>
                                                     <motion.button
