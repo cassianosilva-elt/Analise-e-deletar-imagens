@@ -7,12 +7,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Eletromidia - Fiscalização AI</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Rethink Sans', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+        },
+      },
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rethink+Sans:ital,wght@0,400..800;1,400..800&display=swap"
+    rel="stylesheet">
   <style>
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Rethink Sans', sans-serif;
       background-color: #F3F4F6;
-      overflow: hidden;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    #root {
+      min-height: 100vh;
     }
 
     /* Custom scrollbar */
@@ -44,6 +67,18 @@
 
     .border-brand-orange {
       border-color: #FF4D00;
+    }
+
+    /* Hide caret by default */
+    * {
+      caret-color: transparent;
+    }
+
+    /* Show caret only when input elements are focused */
+    input:focus,
+    textarea:focus,
+    [contenteditable="true"]:focus {
+      caret-color: auto;
     }
   </style>
   <script type="importmap">

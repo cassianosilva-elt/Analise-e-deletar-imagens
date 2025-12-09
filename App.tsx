@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import MainView from './components/MainView';
+import OnboardingScreen from './components/OnboardingScreen';
 import { Breadcrumb, FolderItem, FileItem, ItemType, AnalysisStatus } from './types';
-import { analyzeFolderImages } from './services/geminiService';
-import { FolderSearch, UploadCloud, AlertTriangle } from 'lucide-react';
+import { analyzeFolderImages, GeminiModel } from './services/geminiService';
+import { AlertTriangle } from 'lucide-react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import ExcelJS from 'exceljs';
@@ -16,6 +17,7 @@ const App = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<GeminiModel>('gemini-2.0-flash');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -74,12 +76,21 @@ const App = () => {
   };
 
   const handleFolderSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
+    // Handle both FileList from input and File[] from drag-and-drop
+    const filesSource = event.target.files;
+    if (!filesSource || filesSource.length === 0) return;
     setErrorMessage(null);
 
-    const fileList = Array.from(files) as (File & { webkitRelativePath: string })[];
-    const rootName = fileList[0].webkitRelativePath.split('/')[0];
+    // Convert to array - works with both FileList and File[]
+    const fileList = Array.from(filesSource) as (File & { webkitRelativePath: string })[];
+
+    // Find the root folder name from the first file's path
+    const firstPath = fileList[0].webkitRelativePath;
+    if (!firstPath) {
+      setErrorMessage('Erro: arquivos sem caminho de pasta detectado.');
+      return;
+    }
+    const rootName = firstPath.split('/')[0];
 
     const newRoot: FolderItem = {
       id: 'root',
@@ -253,7 +264,7 @@ const App = () => {
             // Use a small delay to prevent browser UI freezing
             await new Promise(r => setTimeout(r, 100));
 
-            const result = await analyzeFolderImages(folder.name, imageFiles);
+            const result = await analyzeFolderImages(folder.name, imageFiles, selectedModel);
 
             const finalStatus = result.status === 'COMPLETED' ? AnalysisStatus.COMPLETED : AnalysisStatus.PENDING;
             refreshTree(folder.path, finalStatus, result.reason, result.selectedFiles);
@@ -496,39 +507,12 @@ const App = () => {
 
   if (!rootFolder) {
     return (
-      <div className="h-screen w-screen bg-[#F3F4F6] flex items-center justify-center font-['Inter']">
-        <div className="bg-white p-12 rounded-2xl shadow-xl text-center max-w-lg border border-gray-100">
-          <div className="bg-orange-100 p-6 rounded-full inline-block mb-6">
-            <FolderSearch className="w-16 h-16 text-[#FF4D00]" />
-          </div>
-          <h1 className="text-3xl font-bold mb-3 text-gray-900">Fiscalização <span className="text-[#FF4D00]">AI</span></h1>
-          <p className="text-gray-500 mb-8 leading-relaxed">
-            Importe sua pasta raiz "Fiscalização". O sistema identificará automaticamente os abrigos concluídos e selecionará as melhores evidências fotográficas.
-          </p>
-
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="bg-[#FF4D00] hover:bg-[#E64500] text-white font-medium px-8 py-4 rounded-xl shadow-lg shadow-orange-500/20 flex items-center justify-center w-full transition-all transform hover:-translate-y-1"
-          >
-            <UploadCloud className="w-6 h-6 mr-3" />
-            Selecionar Pasta Fiscalização
-          </button>
-          <input
-            type="file"
-            ref={fileInputRef}
-            // @ts-ignore 
-            webkitdirectory=""
-            multiple
-            className="hidden"
-            onChange={handleFolderSelect}
-          />
-          <div className="mt-8 flex justify-center space-x-2">
-            <div className="h-1.5 w-1.5 rounded-full bg-gray-300"></div>
-            <div className="h-1.5 w-1.5 rounded-full bg-gray-300"></div>
-            <div className="h-1.5 w-1.5 rounded-full bg-[#FF4D00]"></div>
-          </div>
-        </div>
-      </div>
+      <OnboardingScreen
+        onFolderSelect={handleFolderSelect}
+        onModelSelect={setSelectedModel}
+        selectedModel={selectedModel}
+        fileInputRef={fileInputRef as React.RefObject<HTMLInputElement>}
+      />
     );
   }
 
@@ -550,7 +534,7 @@ const App = () => {
   const activeFolder = getActiveFolder();
 
   return (
-    <div className="flex flex-col h-screen bg-[#F8F9FA] text-gray-900 font-['Inter']">
+    <div className="flex flex-col h-screen bg-[#F8F9FA] text-gray-900 font-sans">
       <TopBar
         currentPath={path}
         onNavigateUp={handleNavigateUp}
