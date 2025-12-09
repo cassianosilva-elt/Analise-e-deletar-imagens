@@ -8,6 +8,8 @@ interface MainViewProps {
   onNavigate: (item: FolderItem) => void;
   onDeleteFolder?: (folderPath: string) => void;
   onToggleFolderSelection?: (folderPath: string) => void;
+  onManualStatusChange?: (folderPath: string, status: AnalysisStatus) => void;
+  onToggleImageSelection?: (imagePath: string) => void;
   selectedFolders?: Set<string>;
   currentFolderStatus?: AnalysisStatus;
   currentFolderReason?: string;
@@ -54,6 +56,8 @@ const MainView: React.FC<MainViewProps> = ({
   onNavigate,
   onDeleteFolder,
   onToggleFolderSelection,
+  onManualStatusChange,
+  onToggleImageSelection,
   selectedFolders,
   currentFolderStatus,
   currentFolderReason
@@ -76,6 +80,20 @@ const MainView: React.FC<MainViewProps> = ({
     e.stopPropagation();
     if (onDeleteFolder) {
       onDeleteFolder(folderPath);
+    }
+  };
+
+  const handleManualStatus = (e: React.MouseEvent, folderPath: string, status: AnalysisStatus) => {
+    e.stopPropagation();
+    if (onManualStatusChange) {
+      onManualStatusChange(folderPath, status);
+    }
+  };
+
+  const handleImageSelectToggle = (e: React.MouseEvent, imagePath: string) => {
+    e.stopPropagation();
+    if (onToggleImageSelection) {
+      onToggleImageSelection(imagePath);
     }
   };
 
@@ -162,7 +180,7 @@ const MainView: React.FC<MainViewProps> = ({
                   ${isFolderSelected ? 'bg-blue-50/60 border-l-4 border-l-blue-400' : ''}
                 `}
               >
-                {/* Mobile/Tablet Layout */}
+                {/* Mobile/Tablet Layout (Simplified for brevity, keeping existing structure but just updating Desktop mainly for now or both if I can) */}
                 <div className="lg:hidden">
                   <div className="flex items-center gap-3">
                     {/* Icon/Thumbnail */}
@@ -201,16 +219,44 @@ const MainView: React.FC<MainViewProps> = ({
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    {isFolder && onDeleteFolder && (
-                      <button
-                        onClick={(e) => handleDelete(e, (item as FolderItem).path)}
-                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
-                        title="Excluir pasta"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
+                    {/* Mobile Actions */}
+                    <div className="flex items-center gap-1">
+                      {isFolder && onManualStatusChange && (
+                        <>
+                          <button
+                            onClick={(e) => handleManualStatus(e, (item as FolderItem).path, AnalysisStatus.COMPLETED)}
+                            className="p-2 text-green-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => handleManualStatus(e, (item as FolderItem).path, AnalysisStatus.PENDING)}
+                            className="p-2 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                          >
+                            <AlertCircle className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+
+                      {isImage && onToggleImageSelection && (
+                        <button
+                          onClick={(e) => handleImageSelectToggle(e, (item as FileItem).path)}
+                          className={`p-2 rounded-lg transition-colors ${isSelected ? 'text-green-500 bg-green-50' : 'text-gray-300 hover:text-gray-500'}`}
+                        >
+                          {isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                        </button>
+                      )}
+
+                      {isFolder && onDeleteFolder && (
+                        <button
+                          onClick={(e) => handleDelete(e, (item as FolderItem).path)}
+                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                          title="Excluir pasta"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -257,7 +303,38 @@ const MainView: React.FC<MainViewProps> = ({
                   </div>
 
                   {/* Actions */}
-                  <div className="col-span-2 text-right">
+                  <div className="col-span-2 text-right flex items-center justify-end gap-1">
+
+                    {/* Manual Override Controls */}
+                    {isFolder && onManualStatusChange && (
+                      <>
+                        <button
+                          onClick={(e) => handleManualStatus(e, (item as FolderItem).path, AnalysisStatus.COMPLETED)}
+                          className="p-1.5 text-green-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                          title="Marcar como Concluído"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => handleManualStatus(e, (item as FolderItem).path, AnalysisStatus.PENDING)}
+                          className="p-1.5 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                          title="Marcar como Pendente"
+                        >
+                          <AlertCircle className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
+
+                    {isImage && onToggleImageSelection && (
+                      <button
+                        onClick={(e) => handleImageSelectToggle(e, (item as FileItem).path)}
+                        title={isSelected ? "Remover seleção" : "Selecionar imagem"}
+                        className={`p-1.5 rounded-lg transition-colors ${isSelected ? 'text-green-500 bg-green-50 hover:bg-green-100' : 'text-gray-300 hover:text-gray-500 hover:bg-gray-50'}`}
+                      >
+                        {isSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                      </button>
+                    )}
+
                     {isFolder && onDeleteFolder && (
                       <button
                         onClick={(e) => handleDelete(e, (item as FolderItem).path)}

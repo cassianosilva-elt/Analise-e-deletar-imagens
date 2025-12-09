@@ -268,6 +268,52 @@ const App = () => {
     setPath([{ name: newRoot.name, path: newRoot.path }]);
   };
 
+  const handleManualStatusChange = (folderPath: string, newStatus: AnalysisStatus) => {
+    setRootFolder((prev) => {
+      if (!prev) return null;
+
+      const update = (node: FolderItem): FolderItem => {
+        if (node.path === folderPath) {
+          return {
+            ...node,
+            status: newStatus,
+            analysisSummary: 'Alterado manualmente pelo usuário',
+          };
+        }
+        if (node.children) {
+          const newChildren = node.children.map((child) => {
+            if (child.type === ItemType.FOLDER) return update(child as FolderItem);
+            return child;
+          });
+          return { ...node, children: newChildren };
+        }
+        return node;
+      };
+
+      return update(prev);
+    });
+  };
+
+  const handleToggleImageSelection = (imagePath: string) => {
+    setRootFolder((prev) => {
+      if (!prev) return null;
+
+      const update = (node: FolderItem): FolderItem => {
+        const newChildren = node.children.map((child) => {
+          if (child.type === ItemType.FOLDER) {
+            return update(child as FolderItem);
+          }
+          if (child.type === ItemType.IMAGE && child.path === imagePath) {
+            return { ...child, selectedByAI: !(child as FileItem).selectedByAI } as FileItem;
+          }
+          return child;
+        });
+        return { ...node, children: newChildren };
+      };
+      return update(prev);
+    });
+  };
+
   const handleRunAI = async () => {
     if (!rootFolder) return;
     setIsProcessing(true);
@@ -630,6 +676,8 @@ const App = () => {
           onNavigate={handleNavigate}
           onDeleteFolder={handleDeleteFolder}
           onToggleFolderSelection={handleToggleFolderSelection}
+          onManualStatusChange={handleManualStatusChange}
+          onToggleImageSelection={handleToggleImageSelection}
           selectedFolders={selectedFolders}
           currentFolderStatus={activeFolder.status}
           currentFolderReason={activeFolder.analysisSummary}
