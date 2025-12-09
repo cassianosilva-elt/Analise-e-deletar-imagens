@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FolderSearch, Sparkles, ChevronRight, ChevronLeft, Check, Zap, Loader2, FolderOpen } from 'lucide-react';
-import UploadConfirmationModal from './UploadConfirmationModal';
 import { AIModelType } from '../types';
 
 interface OnboardingWizardProps {
@@ -45,7 +44,6 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
     const [folderCount, setFolderCount] = useState(0);
     const [fileCount, setFileCount] = useState(0);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [showUploadModal, setShowUploadModal] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Count folders when files are selected
@@ -76,23 +74,8 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
         const files = event.target.files;
         if (files && files.length > 0) {
             setSelectedFiles(files);
-            setShowUploadModal(true);
-        }
-    };
-
-    const handleConfirmUpload = () => {
-        setShowUploadModal(false);
-        // Advance to next step
-        setCurrentStep(1);
-    };
-
-    const handleCancelUpload = () => {
-        setShowUploadModal(false);
-        setSelectedFiles(null);
-        setFolderCount(0);
-        setFileCount(0);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
+            // Auto-advance to next step
+            setTimeout(() => setCurrentStep(1), 500);
         }
     };
 
@@ -336,14 +319,6 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
                     </div>
                 )}
             </div>
-
-            <UploadConfirmationModal
-                isOpen={showUploadModal}
-                onConfirm={handleConfirmUpload}
-                onCancel={handleCancelUpload}
-                folderCount={folderCount}
-                fileCount={fileCount}
-            />
         </div>
     );
 };

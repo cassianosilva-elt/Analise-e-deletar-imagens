@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { FolderUp, Sparkles, Zap, ChevronRight, Check, ArrowRight, Layers, FileCheck, FolderArchive, BarChart3, AlertCircle } from 'lucide-react';
 import { GeminiModel } from '../services/geminiService';
+import UploadConfirmModal from './ui/UploadConfirmModal';
 
 interface OnboardingScreenProps {
     onFolderSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -102,6 +103,11 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
     fileInputRef
 }) => {
     const [[activeStep, direction], setActiveStep] = useState<[1 | 2, number]>([1, 0]);
+
+    // Upload confirmation modal state
+    const [showUploadConfirm, setShowUploadConfirm] = useState(false);
+    const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+    const [pendingFolderName, setPendingFolderName] = useState('');
 
     const handleStepChange = (newStep: 1 | 2) => {
         if (newStep === activeStep) return;
@@ -276,19 +282,58 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                 return;
             }
 
-            // Create a synthetic event-like object that mimics file input change
-            const syntheticEvent = {
-                target: {
-                    files: files
-                }
-            } as unknown as React.ChangeEvent<HTMLInputElement>;
-
-            onFolderSelect(syntheticEvent);
+            // Store files and show confirmation modal
+            setPendingFiles(files);
+            setPendingFolderName(entry.name);
+            setShowUploadConfirm(true);
         } catch (err) {
             console.error('Error processing dropped folder:', err);
             setDragError('Erro ao processar pasta. Tente usar o botão de seleção.');
         }
-    }, [onFolderSelect]);
+    }, []);
+
+    // Handle file input change (click to select folder)
+    const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        // Extract folder name from the first file's path
+        const firstFilePath = files[0].webkitRelativePath;
+        const folderName = firstFilePath.split('/')[0] || 'Pasta selecionada';
+
+        // Convert FileList to array
+        const filesArray = Array.from(files);
+
+        // Store files and show confirmation modal
+        setPendingFiles(filesArray);
+        setPendingFolderName(folderName);
+        setShowUploadConfirm(true);
+    }, []);
+
+    // Confirm upload handler
+    const handleConfirmUpload = useCallback(() => {
+        setShowUploadConfirm(false);
+
+        // Create a synthetic event-like object that mimics file input change
+        const syntheticEvent = {
+            target: {
+                files: pendingFiles
+            }
+        } as unknown as React.ChangeEvent<HTMLInputElement>;
+
+        onFolderSelect(syntheticEvent);
+
+        // Clean up pending state
+        setPendingFiles([]);
+        setPendingFolderName('');
+    }, [pendingFiles, onFolderSelect]);
+
+    // Cancel upload handler
+    const handleCancelUpload = useCallback(() => {
+        setShowUploadConfirm(false);
+        setPendingFiles([]);
+        setPendingFolderName('');
+    }, []);
 
     return (
         <div className="min-h-screen w-full bg-[#FAFAFA] overflow-y-auto overflow-x-hidden font-['Rethink_Sans']">
@@ -741,7 +786,16 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                 webkitdirectory=""
                 multiple
                 className="hidden"
-                onChange={onFolderSelect}
+                onChange={handleFileInputChange}
+            />
+
+            {/* Upload Confirmation Modal */}
+            <UploadConfirmModal
+                isOpen={showUploadConfirm}
+                onConfirm={handleConfirmUpload}
+                onCancel={handleCancelUpload}
+                fileCount={pendingFiles.length}
+                folderName={pendingFolderName}
             />
         </div >
     );
