@@ -51,7 +51,7 @@ const resizeAndEncodeImage = (file: File): Promise<string> => {
   });
 };
 
-export type GeminiModel = 'gemini-2.0-flash' | 'gemini-2.0-flash-lite';
+export type GeminiModel = 'gemini-flash-latest' | 'gemini-flash-lite-latest';
 
 export const analyzeFolderImages = async (
   folderName: string,

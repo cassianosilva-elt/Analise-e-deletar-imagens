@@ -12,6 +12,9 @@ export enum AnalysisStatus {
   ERROR = 'ERROR'
 }
 
+// AI Model Types
+export type AIModelType = 'gemini-2.0-flash' | 'gemini-2.0-flash-lite';
+
 export interface FileItem {
   name: string;
   path: string;
