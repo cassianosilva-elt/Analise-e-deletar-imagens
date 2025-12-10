@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { AIAnalysisResult, VerificationItemType, VERIFICATION_ITEMS } from "../types";
+import { AIAnalysisResult, VerificationItemType, VERIFICATION_ITEMS, EquipmentInfo } from "../types";
 
 // Helper to resize and convert File to Base64
 const resizeAndEncodeImage = (file: File): Promise<string> => {
@@ -87,7 +87,8 @@ export const analyzeFolderImages = async (
   folderName: string,
   files: File[],
   model: GeminiModel = 'gemini-flash-latest',
-  selectedItems: VerificationItemType[] = ['abrigo']
+  selectedItems: VerificationItemType[] = ['abrigo'],
+  equipmentInfo?: EquipmentInfo
 ): Promise<AIAnalysisResult> => {
   if (!process.env.GEMINI_API_KEY) {
     console.error("API Key is missing in process.env");
@@ -121,87 +122,138 @@ export const analyzeFolderImages = async (
   // Generate criteria for each selected item
   const itemCriteria = selectedItems.map(item => getItemCriteria(item)).join('\n\n');
 
-  try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  // Retry configuration - increased for handling overload
+  const MAX_RETRIES = 5;
+  const INITIAL_DELAY = 8000; // 8 seconds
 
-    const prompt = `
-      Você é um auditor de obras da Eletromidia.
-      Analise as imagens da pasta: "${folderName}".
-      
-      ITENS A VERIFICAR: ${selectedLabels}
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-      CRITÉRIOS DE VERIFICAÇÃO:
-      ${itemCriteria}
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(`[IA] Analisando pasta: "${folderName}" (tentativa ${attempt + 1}/${MAX_RETRIES + 1})...`);
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-      LÓGICA DE AVALIAÇÃO:
-      - Status "COMPLETED": TODOS os itens selecionados foram encontrados e estão OK nas imagens
-      - Status "PENDING": Um ou mais itens NÃO foram encontrados ou estão incompletos
-      
-      IMPORTANTE:
-      - Analise apenas os itens listados acima
-      - Na dúvida sobre um item específico, se houver evidência parcial, considere como presente
-      - Selecione até 3 fotos que melhor demonstrem os itens verificados
+      // Build equipment context section if available
+      const equipmentContext = equipmentInfo ? `
+        INFORMAÇÕES DO EQUIPAMENTO (da base de dados):
+        - Endereço: ${equipmentInfo.endereco}, ${equipmentInfo.bairro}, ${equipmentInfo.cidade}-${equipmentInfo.estado}
+        - Modelo de Abrigo: ${equipmentInfo.modeloAbrigo}
+        - Tipo de Equipamento: ${equipmentInfo.tipoEquipamento || 'Não especificado'}
+        - Painel Digital: ${equipmentInfo.painelDigital}
+        - Painel Estático: ${equipmentInfo.painelEstatico}
+        - Ponto: ${equipmentInfo.ponto}
+        
+        Use essas informações para contextualizar sua análise. O modelo de abrigo pode ajudar a identificar o tipo de estrutura esperada.
+      ` : '';
 
-      SAÍDA JSON:
-      {
-        "status": "COMPLETED" | "PENDING",
-        "selectedFiles": ["arquivo1.jpg", "arquivo2.jpg", "arquivo3.jpg"],
-        "reason": "Explicação curta em PT-BR indicando quais itens foram encontrados e quais estão faltando."
-      }
-    `;
+      const prompt = `
+        Você é um auditor de obras da Eletromidia.
+        Analise as imagens da pasta: "${folderName}".
+        ${equipmentContext}
+        ITENS A VERIFICAR: ${selectedLabels}
 
-    const parts: any[] = [{ text: prompt }];
+        CRITÉRIOS DE VERIFICAÇÃO:
+        ${itemCriteria}
 
-    for (const file of processedFiles) {
-      try {
-        const base64Data = await resizeAndEncodeImage(file);
-        parts.push({
-          inlineData: {
-            mimeType: 'image/jpeg',
-            data: base64Data
-          }
-        });
-        parts.push({ text: `Arquivo ID: ${file.name}` });
-      } catch (e) {
-        console.warn(`Failed to process file ${file.name}`, e);
-      }
-    }
+        LÓGICA DE AVALIAÇÃO:
+        - Status "COMPLETED": TODOS os itens selecionados foram encontrados e estão OK nas imagens
+        - Status "PENDING": Um ou mais itens NÃO foram encontrados ou estão incompletos
+        
+        IMPORTANTE:
+        - Analise apenas os itens listados acima
+        - Na dúvida sobre um item específico, se houver evidência parcial, considere como presente
+        - Selecione até 3 fotos que melhor demonstrem os itens verificados
 
-    const response = await ai.models.generateContent({
-      model: model,
-      contents: {
-        role: 'user',
-        parts: parts
-      },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            status: { type: Type.STRING, enum: ["COMPLETED", "PENDING"] },
-            selectedFiles: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING }
-            },
-            reason: { type: Type.STRING }
-          }
+        SAÍDA JSON:
+        {
+          "status": "COMPLETED" | "PENDING",
+          "selectedFiles": ["arquivo1.jpg", "arquivo2.jpg", "arquivo3.jpg"],
+          "reason": "Explicação curta em PT-BR indicando quais itens foram encontrados e quais estão faltando.",
+          "observation": "Observações adicionais relevantes sobre a instalação (ex: danos visíveis, sujeira excessiva, componentes extras, condições especiais do local, etc). Se não houver nada relevante, deixe em branco."
+        }
+      `;
+
+      const parts: any[] = [{ text: prompt }];
+
+      for (const file of processedFiles) {
+        try {
+          const base64Data = await resizeAndEncodeImage(file);
+          parts.push({
+            inlineData: {
+              mimeType: 'image/jpeg',
+              data: base64Data
+            }
+          });
+          parts.push({ text: `Arquivo ID: ${file.name}` });
+        } catch (e) {
+          console.warn(`Failed to process file ${file.name}`, e);
         }
       }
-    });
 
-    const text = response.text;
-    if (!text) throw new Error("No response from AI");
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: {
+          role: 'user',
+          parts: parts
+        },
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              status: { type: Type.STRING, enum: ["COMPLETED", "PENDING"] },
+              selectedFiles: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING }
+              },
+              reason: { type: Type.STRING },
+              observation: { type: Type.STRING }
+            }
+          }
+        }
+      });
 
-    const result = JSON.parse(text) as AIAnalysisResult;
-    return result;
+      const text = response.text;
+      if (!text) {
+        throw new Error(`Sem resposta da IA para pasta "${folderName}"`);
+      }
 
-  } catch (error: any) {
-    console.error("Error analyzing folder:", error);
-    return {
-      folderName,
-      status: 'PENDING',
-      selectedFiles: [],
-      reason: `Erro: ${error.message || "Falha desconhecida na API"}`
-    };
+      const result = JSON.parse(text) as AIAnalysisResult;
+      result.folderName = folderName;
+      console.log(`[IA] Pasta "${folderName}" concluída: ${result.status}`);
+      return result;
+
+    } catch (error: any) {
+      const isOverloaded = error?.message?.includes('503') ||
+        error?.message?.includes('overloaded') ||
+        error?.message?.includes('Sem resposta') ||
+        error?.status === 503;
+
+      // If it's an overload error or empty response and we have retries left, wait and retry
+      if (isOverloaded && attempt < MAX_RETRIES) {
+        const waitTime = INITIAL_DELAY * Math.pow(2, attempt); // Exponential backoff: 8s, 16s, 32s...
+        console.log(`[IA] Erro na pasta "${folderName}", retentando em ${waitTime / 1000}s (tentativa ${attempt + 1}/${MAX_RETRIES})...`);
+        await delay(waitTime);
+        continue;
+      }
+
+      console.error(`[IA] Erro ao analisar pasta "${folderName}":`, error.message || error);
+      return {
+        folderName,
+        status: 'PENDING',
+        selectedFiles: [],
+        reason: isOverloaded
+          ? `Erro: API sobrecarregada após ${MAX_RETRIES} tentativas. Tente novamente mais tarde.`
+          : `Erro: ${error.message || "Falha desconhecida na API"}`
+      };
+    }
   }
+
+  // This should never be reached, but TypeScript needs it
+  return {
+    folderName,
+    status: 'PENDING',
+    selectedFiles: [],
+    reason: "Erro: Número máximo de tentativas excedido."
+  };
 };

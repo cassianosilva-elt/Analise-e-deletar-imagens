@@ -13,23 +13,12 @@ export enum AnalysisStatus {
 }
 
 // AI Model Types
-export type AIModelType = 'gemini-flash-latest' | 'gemini-flash-lite-latest';
+export type AIModelType = 'gemini-2.0-flash' | 'gemini-2.0-flash-lite';
 
-// Verification item types that the AI can check
-export type VerificationItemType =
-  | 'abrigo'
-  | 'luminaria'
-  | 'totem_estatico'
-  | 'totem_digital'
-  | 'fundacao';
+// Verification Item Types for onboarding selection
+export type VerificationItemType = 'abrigo' | 'luminaria' | 'totem_estatico' | 'totem_digital' | 'fundacao';
 
-export interface VerificationItem {
-  id: VerificationItemType;
-  label: string;
-  description: string;
-}
-
-export const VERIFICATION_ITEMS: VerificationItem[] = [
+export const VERIFICATION_ITEMS: { id: VerificationItemType; label: string; description: string }[] = [
   { id: 'abrigo', label: 'Abrigo', description: 'Abrigo de ônibus completo' },
   { id: 'luminaria', label: 'Luminárias', description: 'Luminárias do abrigo' },
   { id: 'totem_estatico', label: 'Totem Estático', description: 'Totem publicitário estático' },
@@ -47,6 +36,26 @@ export interface FileItem {
   aiReason?: string; // Why it was chosen or rejected
 }
 
+// Equipment Info from external API
+export interface EquipmentInfo {
+  nEletro: string;
+  nParada: number;
+  endereco: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+  modeloAbrigo: string;
+  linkOperacoes: string;
+  tipoEquipamento: string;
+  painelDigital: string;
+  painelEstatico: string;
+  latitude: number;
+  longitude: number;
+  ponto: string;
+  areaTrabalho: string;
+  status: string;
+}
+
 export interface FolderItem {
   id: string;
   name: string;
@@ -55,7 +64,10 @@ export interface FolderItem {
   children: (FolderItem | FileItem)[];
   status: AnalysisStatus;
   analysisSummary?: string;
+  observation?: string;
   lastModified?: string;
+  equipmentInfo?: EquipmentInfo;  // Enriched data from API
+  enrichedAddress?: string;        // Resolved address from API
 }
 
 export interface Breadcrumb {
@@ -69,4 +81,5 @@ export interface AIAnalysisResult {
   status: 'COMPLETED' | 'PENDING';
   selectedFiles: string[]; // Names of the 3 selected files
   reason: string;
+  observation?: string; // Auto-generated observation notes
 }

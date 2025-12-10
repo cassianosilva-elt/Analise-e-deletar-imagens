@@ -107,8 +107,8 @@ const ConfiguracoesPage: React.FC<ConfiguracoesPageProps> = ({
                         <button
                             onClick={() => onModelChange('gemini-flash-latest')}
                             className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${selectedModel === 'gemini-flash-latest'
-                                    ? 'border-[#FF4D00] bg-orange-50'
-                                    : 'border-gray-200 hover:border-gray-300'
+                                ? 'border-[#FF4D00] bg-orange-50'
+                                : 'border-gray-200 hover:border-gray-300'
                                 }`}
                         >
                             <div className={`p-2.5 rounded-xl ${selectedModel === 'gemini-flash-latest' ? 'bg-[#FF4D00]' : 'bg-gray-200'}`}>
@@ -126,8 +126,8 @@ const ConfiguracoesPage: React.FC<ConfiguracoesPageProps> = ({
                         <button
                             onClick={() => onModelChange('gemini-flash-lite-latest')}
                             className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${selectedModel === 'gemini-flash-lite-latest'
-                                    ? 'border-[#FF4D00] bg-orange-50'
-                                    : 'border-gray-200 hover:border-gray-300'
+                                ? 'border-[#FF4D00] bg-orange-50'
+                                : 'border-gray-200 hover:border-gray-300'
                                 }`}
                         >
                             <div className={`p-2.5 rounded-xl ${selectedModel === 'gemini-flash-lite-latest' ? 'bg-[#FF4D00]' : 'bg-gray-200'}`}>

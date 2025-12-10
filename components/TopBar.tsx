@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FolderOpen, Wand2, ArrowLeft, FileSpreadsheet, Archive, Trash2, Check, Download, Menu, X, CheckSquare, Square } from 'lucide-react';
+import { FolderOpen, Wand2, ArrowLeft, FileSpreadsheet, Archive, Trash2, Check, Download, Menu, X, CheckSquare, Square, Database, Loader2 } from 'lucide-react';
 import { Breadcrumb, AnalysisStatus } from '../types';
 
 interface TopBarProps {
@@ -16,6 +16,8 @@ interface TopBarProps {
   totalPending: number;
   selectedCount: number;
   totalFolders: number;
+  equipmentCacheReady?: boolean;
+  equipmentCount?: number;
 }
 
 const TopBar: React.FC<TopBarProps> = ({
@@ -31,7 +33,9 @@ const TopBar: React.FC<TopBarProps> = ({
   isProcessing,
   totalPending,
   selectedCount,
-  totalFolders
+  totalFolders,
+  equipmentCacheReady = false,
+  equipmentCount = 0
 }) => {
   const [zipDropdownOpen, setZipDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -94,6 +98,21 @@ const TopBar: React.FC<TopBarProps> = ({
               )}
             </div>
           )}
+
+          {/* Equipment Cache Status - Desktop */}
+          <div className="hidden lg:flex items-center ml-2">
+            {equipmentCacheReady ? (
+              <div className="flex items-center px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md border border-emerald-200 text-xs font-medium" title={`${equipmentCount.toLocaleString()} equipamentos carregados`}>
+                <Database className="w-3 h-3 mr-1" />
+                {equipmentCount.toLocaleString()}
+              </div>
+            ) : (
+              <div className="flex items-center px-2 py-1 bg-gray-50 text-gray-500 rounded-md border border-gray-200 text-xs font-medium animate-pulse">
+                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                Carregando...
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right: Actions */}

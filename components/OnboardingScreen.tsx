@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
-import { FolderUp, Sparkles, Zap, ChevronRight, Check, ArrowRight, Layers, FileCheck, FolderArchive, BarChart3, AlertCircle, Settings2 } from 'lucide-react';
+import { FolderUp, Sparkles, Zap, ChevronRight, Check, ArrowRight, Layers, FileCheck, FolderArchive, BarChart3, AlertCircle } from 'lucide-react';
 import { GeminiModel } from '../services/geminiService';
 import { VerificationItemType, VERIFICATION_ITEMS } from '../types';
 import UploadConfirmModal from './ui/UploadConfirmModal';
@@ -14,82 +14,44 @@ interface OnboardingScreenProps {
     fileInputRef: React.RefObject<HTMLInputElement>;
 }
 
-// Animation variants with proper types
+// Animation variants
 const containerVariants: Variants = {
     hidden: { opacity: 0 },
-    visible: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.1,
-            delayChildren: 0.2
-        }
-    }
+    visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.2 } }
 };
 
 const itemVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
-    visible: {
-        opacity: 1,
-        y: 0,
-        transition: { type: 'spring' as const, stiffness: 300, damping: 24 }
-    }
+    visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } }
 };
 
 const cardVariants: Variants = {
     hidden: { opacity: 0, scale: 0.95 },
-    visible: {
-        opacity: 1,
-        scale: 1,
-        transition: { type: 'spring' as const, stiffness: 300, damping: 25 }
-    },
-    hover: {
-        scale: 1.02,
-        transition: { type: 'spring' as const, stiffness: 400, damping: 20 }
-    },
+    visible: { opacity: 1, scale: 1, transition: { type: 'spring' as const, stiffness: 300, damping: 25 } },
+    hover: { scale: 1.02, transition: { type: 'spring' as const, stiffness: 400, damping: 20 } },
     tap: { scale: 0.98 }
 };
 
 const uploadAreaVariants: Variants = {
     hidden: { opacity: 0, scale: 0.9 },
-    visible: {
-        opacity: 1,
-        scale: 1,
-        transition: { type: 'spring' as const, stiffness: 200, damping: 20, delay: 0.2 }
-    }
+    visible: { opacity: 1, scale: 1, transition: { type: 'spring' as const, stiffness: 200, damping: 20, delay: 0.2 } }
 };
 
 const floatingAnimation = {
     y: [-5, 5, -5],
-    transition: {
-        duration: 3,
-        repeat: Infinity,
-        ease: [0.42, 0, 0.58, 1] as const
-    }
+    transition: { duration: 3, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }
 };
 
 const pulseAnimation = {
     scale: [1, 1.05, 1],
     opacity: [0.5, 0.8, 0.5],
-    transition: {
-        duration: 2,
-        repeat: Infinity,
-        ease: [0.42, 0, 0.58, 1] as const
-    }
+    transition: { duration: 2, repeat: Infinity, ease: [0.42, 0, 0.58, 1] as const }
 };
 
 const slideVariants: Variants = {
-    enter: (direction: number) => ({
-        x: direction > 0 ? 50 : -50,
-        opacity: 0
-    }),
-    center: {
-        x: 0,
-        opacity: 1
-    },
-    exit: (direction: number) => ({
-        x: direction < 0 ? 50 : -50,
-        opacity: 0
-    })
+    enter: (direction: number) => ({ x: direction > 0 ? 50 : -50, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (direction: number) => ({ x: direction < 0 ? 50 : -50, opacity: 0 })
 };
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
@@ -101,22 +63,19 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
     fileInputRef
 }) => {
     const [[activeStep, direction], setActiveStep] = useState<[1 | 2 | 3, number]>([1, 0]);
-
-    // Upload confirmation modal state
     const [showUploadConfirm, setShowUploadConfirm] = useState(false);
     const [pendingFiles, setPendingFiles] = useState<File[]>([]);
     const [pendingFolderName, setPendingFolderName] = useState('');
+    const [hoveredModel, setHoveredModel] = useState<GeminiModel | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragError, setDragError] = useState<string | null>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
+    const [contentHeight, setContentHeight] = useState<number | 'auto'>('auto');
 
     const handleStepChange = (newStep: 1 | 2 | 3) => {
         if (newStep === activeStep) return;
         setActiveStep([newStep, newStep > activeStep ? 1 : -1]);
     };
-    const [hoveredModel, setHoveredModel] = useState<GeminiModel | null>(null);
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragError, setDragError] = useState<string | null>(null);
-
-    const contentRef = useRef<HTMLDivElement>(null);
-    const [contentHeight, setContentHeight] = useState<number | 'auto'>('auto');
 
     useEffect(() => {
         if (!contentRef.current) return;
@@ -165,26 +124,6 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
         onItemsSelect(newItems);
     };
 
-    const handleDragEnter = useCallback((e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(true);
-        setDragError(null);
-    }, []);
-
-    const handleDragLeave = useCallback((e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-            setIsDragging(false);
-        }
-    }, []);
-
-    const handleDragOver = useCallback((e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-    }, []);
-
     const readAllEntries = async (dirEntry: FileSystemDirectoryEntry): Promise<File[]> => {
         const files: File[] = [];
         const readEntries = (reader: FileSystemDirectoryReader): Promise<FileSystemEntry[]> => {
@@ -220,6 +159,26 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
         await processEntry(dirEntry, '');
         return files;
     };
+
+    const handleDragEnter = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(true);
+        setDragError(null);
+    }, []);
+
+    const handleDragLeave = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            setIsDragging(false);
+        }
+    }, []);
+
+    const handleDragOver = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+    }, []);
 
     const handleDrop = useCallback(async (e: React.DragEvent) => {
         e.preventDefault();
@@ -285,41 +244,21 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
         <div className="min-h-screen w-full bg-[#FAFAFA] overflow-y-auto overflow-x-hidden font-['Rethink_Sans']">
             {/* Background decorations */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 1.5, ease: 'easeOut' }}
-                    className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-orange-100/60 via-orange-50/30 to-transparent rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/4"
-                />
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 1.5, delay: 0.3, ease: 'easeOut' }}
-                    className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-gray-100/80 to-transparent rounded-full blur-2xl transform -translate-x-1/4 translate-y-1/4"
-                />
+                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.5, ease: 'easeOut' }} className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-orange-100/60 via-orange-50/30 to-transparent rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/4" />
+                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.5, delay: 0.3, ease: 'easeOut' }} className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-gray-100/80 to-transparent rounded-full blur-2xl transform -translate-x-1/4 translate-y-1/4" />
                 <motion.div animate={floatingAnimation} className="absolute top-1/4 right-1/4 w-3 h-3 bg-orange-300/40 rounded-full blur-sm" />
                 <motion.div animate={floatingAnimation} className="absolute top-2/3 left-1/3 w-2 h-2 bg-orange-200/50 rounded-full blur-sm" />
             </div>
 
             <div className="relative z-10 min-h-screen flex flex-col">
                 {/* Header */}
-                <motion.header
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease: 'easeOut' }}
-                    className="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6"
-                >
+                <motion.header initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: 'easeOut' }} className="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
                     <div className="max-w-6xl mx-auto flex items-center justify-between">
                         <motion.div className="flex items-center gap-3" whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 400 }}>
                             <img src="./assets/ELETRO-DESKTOP.png" alt="Eletromidia" className="hidden sm:block h-10 sm:h-11" />
                             <img src="./assets/ELETRO-MOBILE.png" alt="Eletromidia" className="block sm:hidden h-8" />
                         </motion.div>
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.3 }}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-full border border-gray-200 shadow-sm"
-                        >
+                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-full border border-gray-200 shadow-sm">
                             <motion.div className="w-2 h-2 bg-emerald-500 rounded-full" animate={{ scale: [1, 1.2, 1], opacity: [1, 0.7, 1] }} transition={{ duration: 2, repeat: Infinity }} />
                             <span className="text-xs text-gray-600 font-medium">Online</span>
                         </motion.div>
@@ -331,17 +270,17 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                     <div className="max-w-6xl mx-auto">
                         {/* Welcome Section */}
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} className="text-center mb-8 sm:mb-12">
-                            <motion.h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}>
+                            <motion.h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3">
                                 Bem-vindo ao sistema de <span className="text-[#FF4D00]">Fiscalização</span>
                             </motion.h2>
-                            <motion.p className="text-gray-500 text-sm sm:text-base max-w-xl mx-auto" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
+                            <motion.p className="text-gray-500 text-sm sm:text-base max-w-xl mx-auto">
                                 Configure a análise em três passos simples e deixe a IA identificar automaticamente os equipamentos.
                             </motion.p>
                         </motion.div>
 
                         {/* Steps Container */}
                         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, type: 'spring', stiffness: 150 }} className="bg-white rounded-2xl sm:rounded-3xl shadow-xl shadow-gray-200/60 border border-gray-100 overflow-hidden">
-                            {/* Steps Header */}
+                            {/* Steps Header - 3 steps */}
                             <div className="flex border-b border-gray-100">
                                 {[1, 2, 3].map((step) => (
                                     <motion.button
@@ -372,7 +311,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                                         {activeStep === 1 ? (
                                             /* Step 1: Model Selection */
                                             <motion.div key="step1" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ opacity: { duration: 0.2 }, x: { type: 'spring', stiffness: 300, damping: 30 } }}>
-                                                <motion.p className="text-gray-600 text-sm sm:text-base mb-6 text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
+                                                <motion.p className="text-gray-600 text-sm sm:text-base mb-6 text-center">
                                                     Escolha o modelo de IA que será usado para analisar suas fotos.
                                                 </motion.p>
                                                 <motion.div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto mb-8" variants={containerVariants} initial="hidden" animate="visible">
@@ -391,24 +330,22 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                                                                 className={`relative p-5 sm:p-6 rounded-2xl text-left transition-colors border-2 ${isSelected ? 'border-[#FF4D00] bg-gradient-to-br from-orange-50 to-white shadow-lg shadow-orange-500/10' : 'border-gray-200 bg-white hover:border-gray-300'}`}
                                                             >
                                                                 {model.recommended && (
-                                                                    <motion.div className="absolute -top-2.5 left-4 px-2.5 py-0.5 bg-gradient-to-r from-[#FF4D00] to-[#FF6B00] text-white text-[10px] font-bold uppercase rounded-full shadow-sm" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                                                                    <motion.div className="absolute -top-2.5 left-4 px-2.5 py-0.5 bg-gradient-to-r from-[#FF4D00] to-[#FF6B00] text-white text-[10px] font-bold uppercase rounded-full shadow-sm">
                                                                         Recomendado
                                                                     </motion.div>
                                                                 )}
                                                                 <div className="flex items-start gap-4">
-                                                                    <motion.div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-gradient-to-br from-[#FF4D00] to-[#FF6B00] shadow-lg shadow-orange-500/30' : 'bg-gray-100'}`} animate={isSelected ? { rotate: [0, 5, -5, 0], scale: [1, 1.05, 1] } : {}} transition={{ duration: 0.5 }}>
+                                                                    <motion.div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-gradient-to-br from-[#FF4D00] to-[#FF6B00] shadow-lg shadow-orange-500/30' : 'bg-gray-100'}`}>
                                                                         <Icon className={`w-6 h-6 ${isSelected ? 'text-white' : 'text-gray-600'}`} />
                                                                     </motion.div>
                                                                     <div className="flex-1 min-w-0">
                                                                         <div className="flex items-center gap-2">
                                                                             <h3 className="font-semibold text-gray-900">{model.name}</h3>
-                                                                            <AnimatePresence>
-                                                                                {isSelected && (
-                                                                                    <motion.div initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0, opacity: 0 }} className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
-                                                                                        <Check className="w-3 h-3 text-white" />
-                                                                                    </motion.div>
-                                                                                )}
-                                                                            </AnimatePresence>
+                                                                            {isSelected && (
+                                                                                <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
+                                                                                    <Check className="w-3 h-3 text-white" />
+                                                                                </div>
+                                                                            )}
                                                                         </div>
                                                                         <p className="text-sm text-gray-500 mt-1">{model.description}</p>
                                                                     </div>
@@ -417,24 +354,22 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                                                         );
                                                     })}
                                                 </motion.div>
-                                                <motion.div className="flex justify-center" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-                                                    <motion.button onClick={() => handleStepChange(2)} className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white font-medium rounded-xl hover:bg-gray-800 transition-colors shadow-lg" whileHover={{ scale: 1.05, boxShadow: '0 20px 40px -10px rgba(0,0,0,0.3)' }} whileTap={{ scale: 0.95 }}>
+                                                <motion.div className="flex justify-center">
+                                                    <motion.button onClick={() => handleStepChange(2)} className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white font-medium rounded-xl hover:bg-gray-800 transition-colors shadow-lg" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                                                         Continuar
-                                                        <motion.span animate={{ x: [0, 4, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
-                                                            <ArrowRight className="w-4 h-4" />
-                                                        </motion.span>
+                                                        <ArrowRight className="w-4 h-4" />
                                                     </motion.button>
                                                 </motion.div>
                                             </motion.div>
                                         ) : activeStep === 2 ? (
                                             /* Step 2: Item Selection */
                                             <motion.div key="step2" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ opacity: { duration: 0.2 }, x: { type: 'spring', stiffness: 300, damping: 30 } }}>
-                                                <motion.p className="text-gray-600 text-sm sm:text-base mb-6 text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
+                                                <motion.p className="text-gray-600 text-sm sm:text-base mb-6 text-center">
                                                     Selecione quais equipamentos a IA deve identificar nas imagens.
                                                 </motion.p>
-                                                <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-2xl mx-auto mb-6" variants={containerVariants} initial="hidden" animate="visible">
+                                                <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-3xl mx-auto mb-6" variants={containerVariants} initial="hidden" animate="visible">
                                                     {VERIFICATION_ITEMS.map(item => {
-                                                        const isSelected = selectedItems.includes(item.id);
+                                                        const isSelected = selectedItems?.includes(item.id) ?? false;
                                                         return (
                                                             <motion.button
                                                                 key={item.id}
@@ -456,22 +391,20 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                                                     })}
                                                 </motion.div>
                                                 <p className="text-xs text-gray-400 text-center mb-6">Pelo menos um item deve estar selecionado</p>
-                                                <motion.div className="flex justify-center gap-3" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+                                                <motion.div className="flex justify-center gap-3">
                                                     <motion.button onClick={() => handleStepChange(1)} className="inline-flex items-center gap-2 px-4 py-2.5 text-gray-600 hover:text-gray-900 font-medium transition-colors" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                                                         Voltar
                                                     </motion.button>
-                                                    <motion.button onClick={() => handleStepChange(3)} className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white font-medium rounded-xl hover:bg-gray-800 transition-colors shadow-lg" whileHover={{ scale: 1.05, boxShadow: '0 20px 40px -10px rgba(0,0,0,0.3)' }} whileTap={{ scale: 0.95 }}>
+                                                    <motion.button onClick={() => handleStepChange(3)} className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white font-medium rounded-xl hover:bg-gray-800 transition-colors shadow-lg" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                                                         Continuar
-                                                        <motion.span animate={{ x: [0, 4, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
-                                                            <ArrowRight className="w-4 h-4" />
-                                                        </motion.span>
+                                                        <ArrowRight className="w-4 h-4" />
                                                     </motion.button>
                                                 </motion.div>
                                             </motion.div>
                                         ) : (
                                             /* Step 3: Folder Selection */
                                             <motion.div key="step3" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ opacity: { duration: 0.2 }, x: { type: 'spring', stiffness: 300, damping: 30 } }}>
-                                                <motion.p className="text-gray-600 text-sm sm:text-base mb-6 text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
+                                                <motion.p className="text-gray-600 text-sm sm:text-base mb-6 text-center">
                                                     Selecione a pasta raiz contendo as subpastas dos abrigos para análise.
                                                 </motion.p>
                                                 <AnimatePresence>
@@ -484,9 +417,9 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                                                 </AnimatePresence>
                                                 <motion.div onDragEnter={handleDragEnter} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={() => fileInputRef.current?.click()} className="relative max-w-xl mx-auto cursor-pointer" variants={uploadAreaVariants} initial="hidden" animate="visible">
                                                     <motion.div className="absolute inset-0 bg-gradient-to-br from-[#FF4D00]/20 to-[#FF6B00]/10 rounded-2xl blur-xl" animate={pulseAnimation} />
-                                                    <motion.div className={`relative border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center bg-gradient-to-br from-gray-50/50 to-white transition-all duration-300 ${isDragging ? 'border-[#FF4D00] bg-orange-50/50 scale-[1.02] shadow-xl shadow-orange-500/20' : 'border-gray-300 hover:border-[#FF4D00] hover:shadow-lg'}`} animate={isDragging ? { scale: 1.02 } : { scale: 1 }} whileHover={!isDragging ? { scale: 1.01, boxShadow: '0 25px 50px -12px rgba(255, 77, 0, 0.15)' } : {}}>
+                                                    <motion.div className={`relative border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center bg-gradient-to-br from-gray-50/50 to-white transition-all duration-300 ${isDragging ? 'border-[#FF4D00] bg-orange-50/50 scale-[1.02] shadow-xl shadow-orange-500/20' : 'border-gray-300 hover:border-[#FF4D00] hover:shadow-lg'}`}>
                                                         <motion.div className="relative inline-block mb-5" animate={floatingAnimation}>
-                                                            <motion.div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center shadow-xl transition-all duration-300 ${isDragging ? 'bg-gradient-to-br from-[#FF6B00] to-[#FF8C00] shadow-orange-500/40 scale-110' : 'bg-gradient-to-br from-[#FF4D00] to-[#FF6B00] shadow-orange-500/25'}`} animate={isDragging ? { rotate: [0, -5, 5, 0], scale: 1.1 } : {}} transition={{ duration: 0.5, repeat: isDragging ? Infinity : 0 }} whileHover={{ scale: 1.1, rotate: 5 }}>
+                                                            <motion.div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center shadow-xl transition-all duration-300 ${isDragging ? 'bg-gradient-to-br from-[#FF6B00] to-[#FF8C00] shadow-orange-500/40 scale-110' : 'bg-gradient-to-br from-[#FF4D00] to-[#FF6B00] shadow-orange-500/25'}`}>
                                                                 <FolderUp className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                                                             </motion.div>
                                                         </motion.div>
@@ -498,17 +431,15 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                                                         </p>
                                                         <motion.div className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#FF4D00] to-[#FF6B00] text-white font-semibold rounded-xl shadow-lg shadow-orange-500/25" whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.95 }}>
                                                             <span>Selecionar Pasta</span>
-                                                            <motion.span animate={{ x: [0, 4, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
-                                                                <ChevronRight className="w-4 h-4" />
-                                                            </motion.span>
+                                                            <ChevronRight className="w-4 h-4" />
                                                         </motion.div>
                                                     </motion.div>
                                                 </motion.div>
 
                                                 {/* Config Summary */}
-                                                <motion.div className="max-w-xl mx-auto mt-6 p-4 bg-gray-50 rounded-xl" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                                                <motion.div className="max-w-xl mx-auto mt-6 p-4 bg-gray-50 rounded-xl">
                                                     <div className="flex items-center gap-3 mb-3">
-                                                        <motion.div className="w-10 h-10 bg-gradient-to-br from-[#FF4D00] to-[#FF6B00] rounded-lg flex items-center justify-center flex-shrink-0" animate={{ rotate: [0, 5, -5, 0] }} transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}>
+                                                        <motion.div className="w-10 h-10 bg-gradient-to-br from-[#FF4D00] to-[#FF6B00] rounded-lg flex items-center justify-center flex-shrink-0">
                                                             {selectedModel === 'gemini-flash-latest' ? <Sparkles className="w-5 h-5 text-white" /> : <Zap className="w-5 h-5 text-white" />}
                                                         </motion.div>
                                                         <div className="flex-1 min-w-0">
@@ -519,7 +450,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                                                                 {selectedModel === 'gemini-flash-latest' ? 'Alta precisão' : 'Processamento rápido'}
                                                             </p>
                                                         </div>
-                                                        <motion.button onClick={() => handleStepChange(1)} className="text-sm text-[#FF4D00] hover:underline font-medium" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                                        <motion.button onClick={() => handleStepChange(1)} className="text-sm text-[#FF4D00] hover:underline font-medium">
                                                             Alterar
                                                         </motion.button>
                                                     </div>
@@ -532,7 +463,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                                                                 </span>
                                                             ) : null;
                                                         })}
-                                                        <motion.button onClick={() => handleStepChange(2)} className="text-xs text-[#FF4D00] hover:underline font-medium ml-auto" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                                        <motion.button onClick={() => handleStepChange(2)} className="text-xs text-[#FF4D00] hover:underline font-medium ml-auto">
                                                             Editar itens
                                                         </motion.button>
                                                     </div>
@@ -550,7 +481,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                                 const Icon = feature.icon;
                                 return (
                                     <motion.div key={idx} variants={itemVariants} whileHover={{ scale: 1.03, y: -2 }} className="flex items-center gap-3 p-3 sm:p-4 bg-white rounded-xl border border-gray-100 shadow-sm cursor-default">
-                                        <motion.div className="w-9 h-9 sm:w-10 sm:h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0" whileHover={{ rotate: [0, -10, 10, 0], transition: { duration: 0.5 } }}>
+                                        <motion.div className="w-9 h-9 sm:w-10 sm:h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
                                             <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-[#FF4D00]" />
                                         </motion.div>
                                         <span className="text-xs sm:text-sm text-gray-700 font-medium leading-tight">{feature.label}</span>
@@ -563,7 +494,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
             </div>
 
             {/* Hidden file input */}
-            {/* @ts-ignore - webkitdirectory is a valid attribute but not in HTMLInputElement type */}
+            {/* @ts-ignore */}
             <input type="file" ref={fileInputRef} webkitdirectory="" multiple className="hidden" onChange={handleFileInputChange} />
 
             {/* Upload Confirmation Modal */}

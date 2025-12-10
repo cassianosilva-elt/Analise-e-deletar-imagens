@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, FolderSearch, Settings, HelpCircle, BarChart3, ChevronRight, ChevronLeft, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { LayoutDashboard, Settings, HelpCircle, BarChart3, ChevronRight, PanelLeftClose, PanelLeft } from 'lucide-react';
 import { PageVisibility } from './pages/ConfiguracoesPage';
 
 export type PageId = 'dashboard' | 'relatorios' | 'configuracoes' | 'ajuda';
