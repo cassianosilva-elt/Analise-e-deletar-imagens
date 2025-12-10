@@ -1,8 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { AIAnalysisResult } from "../types";
+import { AIAnalysisResult, VerificationItemType, VERIFICATION_ITEMS } from "../types";
 
 // Helper to resize and convert File to Base64
-// This prevents "Payload Too Large" errors with high-res smartphone photos
 const resizeAndEncodeImage = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -14,7 +13,6 @@ const resizeAndEncodeImage = (file: File): Promise<string> => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
-      // Resize to max 1024px (sufficient for AI analysis, drastically reduces size)
       const MAX_SIZE = 1024;
       let width = img.width;
       let height = img.height;
@@ -36,7 +34,6 @@ const resizeAndEncodeImage = (file: File): Promise<string> => {
 
       if (ctx) {
         ctx.drawImage(img, 0, 0, width, height);
-        // Compress to JPEG 0.7 quality
         const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
         resolve(dataUrl.split(',')[1]);
       } else {
@@ -53,10 +50,44 @@ const resizeAndEncodeImage = (file: File): Promise<string> => {
 
 export type GeminiModel = 'gemini-flash-latest' | 'gemini-flash-lite-latest';
 
+// Helper to generate item-specific criteria for the prompt
+const getItemCriteria = (itemType: VerificationItemType): string => {
+  switch (itemType) {
+    case 'abrigo':
+      return `ABRIGO DE ÔNIBUS:
+      - Verificar se o abrigo está montado/instalado (estrutura metálica + teto + lateral/vidros)
+      - NÃO precisa estar 100% perfeito. Se estiver claramente pronto para uso, considere OK
+      - Pequenas imperfeições ou lixo NÃO impedem a aprovação`;
+    case 'luminaria':
+      return `LUMINÁRIAS:
+      - Verificar se há luminárias instaladas na estrutura do abrigo
+      - Podem ser luminárias internas (iluminação do abrigo) ou externas
+      - Verificar se parecem estar funcionais (não quebradas)`;
+    case 'totem_estatico':
+      return `TOTEM ESTÁTICO:
+      - Verificar se há totem publicitário estático (sem tela digital)
+      - Geralmente é um painel vertical com espaço para cartaz/banner
+      - Pode estar integrado ao abrigo ou separado`;
+    case 'totem_digital':
+      return `TOTEM DIGITAL:
+      - Verificar se há totem publicitário digital (com tela/display)
+      - Geralmente é uma tela vertical para exibição de conteúdo digital
+      - Pode estar ligado ou desligado`;
+    case 'fundacao':
+      return `FUNDAÇÃO/BASE:
+      - Verificar se a fundação/base da estrutura está visível e completa
+      - Pode ser base de concreto, metal ou outro material
+      - Verificar se parece estável e bem instalada`;
+    default:
+      return '';
+  }
+};
+
 export const analyzeFolderImages = async (
   folderName: string,
   files: File[],
-  model: GeminiModel = 'gemini-flash-latest'
+  model: GeminiModel = 'gemini-flash-latest',
+  selectedItems: VerificationItemType[] = ['abrigo']
 ): Promise<AIAnalysisResult> => {
   if (!process.env.GEMINI_API_KEY) {
     console.error("API Key is missing in process.env");
@@ -68,7 +99,6 @@ export const analyzeFolderImages = async (
     };
   }
 
-  // Filter for images only
   const imageFiles = files.filter(f => f.type.startsWith('image/'));
 
   if (imageFiles.length === 0) {
@@ -80,9 +110,16 @@ export const analyzeFolderImages = async (
     };
   }
 
-  // LIMIT: Analyze max 6 images to balance speed and accuracy.
-  // We prefer newer images if possible, or just the first 6.
   const processedFiles = imageFiles.slice(0, 6);
+
+  // Get labels for selected items
+  const selectedLabels = selectedItems.map(id => {
+    const item = VERIFICATION_ITEMS.find(v => v.id === id);
+    return item?.label || id;
+  }).join(', ');
+
+  // Generate criteria for each selected item
+  const itemCriteria = selectedItems.map(item => getItemCriteria(item)).join('\n\n');
 
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -91,39 +128,36 @@ export const analyzeFolderImages = async (
       Você é um auditor de obras da Eletromidia.
       Analise as imagens da pasta: "${folderName}".
       
-      OBJETIVO: Identificar se o abrigo de ônibus está PRONTO (construído e instalado).
+      ITENS A VERIFICAR: ${selectedLabels}
 
-      CRITÉRIOS PARA "COMPLETED":
-      - O abrigo está montado/instalado (estrutura metálica + teto + lateral/vidros).
-      - NÃO precisa estar 100% perfeito. Se estiver claramente pronto para uso, marque COMPLETED.
-      - Selecione até 3 fotos que mostrem o abrigo pronto (ângulos variados se possível).
-      - Se tiver 1 ou 2 fotos boas, ainda pode ser COMPLETED.
+      CRITÉRIOS DE VERIFICAÇÃO:
+      ${itemCriteria}
 
-      CRITÉRIOS PARA "PENDING":
-      - Se a pasta SÓ contém fotos de: buracos no chão, obras em andamento com operários trabalhando, apenas fundação/base sem estrutura montada.
-      - Se não há NENHUMA foto mostrando um abrigo instalado.
-
+      LÓGICA DE AVALIAÇÃO:
+      - Status "COMPLETED": TODOS os itens selecionados foram encontrados e estão OK nas imagens
+      - Status "PENDING": Um ou mais itens NÃO foram encontrados ou estão incompletos
+      
       IMPORTANTE:
-      - Na dúvida, prefira marcar como COMPLETED se houver pelo menos UMA foto mostrando um abrigo visivelmente pronto/instalado.
-      - Lixo ou pequenas imperfeições NÃO devem impedir o status COMPLETED.
+      - Analise apenas os itens listados acima
+      - Na dúvida sobre um item específico, se houver evidência parcial, considere como presente
+      - Selecione até 3 fotos que melhor demonstrem os itens verificados
 
       SAÍDA JSON:
       {
         "status": "COMPLETED" | "PENDING",
-        "selectedFiles": ["arquivo1.jpg", "arquivo2.jpg", "arquivo3.jpg"], (Pode ter 1, 2 ou 3 fotos. Vazio apenas se PENDING)
-        "reason": "Explicação curta em PT-BR."
+        "selectedFiles": ["arquivo1.jpg", "arquivo2.jpg", "arquivo3.jpg"],
+        "reason": "Explicação curta em PT-BR indicando quais itens foram encontrados e quais estão faltando."
       }
     `;
 
     const parts: any[] = [{ text: prompt }];
 
-    // Prepare images with resizing
     for (const file of processedFiles) {
       try {
         const base64Data = await resizeAndEncodeImage(file);
         parts.push({
           inlineData: {
-            mimeType: 'image/jpeg', // Always sending JPEG after resize
+            mimeType: 'image/jpeg',
             data: base64Data
           }
         });

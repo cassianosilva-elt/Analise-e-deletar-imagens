@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
-import { FolderItem, FileItem, ItemType, AnalysisStatus, Breadcrumb, AIModelType } from './types';
+import { FolderItem, FileItem, ItemType, AnalysisStatus, Breadcrumb, AIModelType, VerificationItemType, VERIFICATION_ITEMS } from './types';
 import { GeminiModel, analyzeFolderImages } from './services/geminiService';
 import OnboardingScreen from './components/OnboardingScreen';
 import Sidebar, { PageId } from './components/Sidebar';
@@ -39,13 +39,17 @@ const App: React.FC = () => {
   const [showProgressPanel, setShowProgressPanel] = useState(false);
   const [progressMinimized, setProgressMinimized] = useState(false);
 
+  // Verification items state
+  const [selectedVerificationItems, setSelectedVerificationItems] = useState<VerificationItemType[]>(
+    VERIFICATION_ITEMS.map(item => item.id)
+  );
+
   // Handle page visibility toggle
   const handleTogglePageVisibility = (pageId: keyof PageVisibility) => {
     setPageVisibility(prev => ({
       ...prev,
       [pageId]: !prev[pageId]
     }));
-    // If hiding the current page, go back to dashboard
     if (pageId === activePage && pageVisibility[pageId]) {
       setActivePage('dashboard');
     }
@@ -54,6 +58,11 @@ const App: React.FC = () => {
   // Handle model change
   const handleModelChange = (model: GeminiModel) => {
     setSelectedModel(model);
+  };
+
+  // Handle items change
+  const handleItemsChange = (items: VerificationItemType[]) => {
+    setSelectedVerificationItems(items);
   };
 
   // Process uploaded files into folder structure
@@ -93,7 +102,6 @@ const App: React.FC = () => {
         }
       }
 
-      // Add file to its parent folder
       const parentPath = pathParts.slice(0, -1).join('/');
       if (folderMap.has(parentPath)) {
         const fileItem: FileItem = {
@@ -210,7 +218,6 @@ const App: React.FC = () => {
       setCurrentProcessingFolder(folderPath.split('/').pop() || folderPath);
       updateFolderStatus(folderPath, AnalysisStatus.PROCESSING);
 
-      // Get files from folder
       const findFolder = (folder: FolderItem): FolderItem | null => {
         if (folder.path === folderPath) return folder;
         for (const child of folder.children) {
@@ -229,7 +236,7 @@ const App: React.FC = () => {
           .map(c => (c as FileItem).fileObject!);
 
         try {
-          const result = await analyzeFolderImages(targetFolder.name, files, selectedModel);
+          const result = await analyzeFolderImages(targetFolder.name, files, selectedModel, selectedVerificationItems);
           const newStatus = result.status === 'COMPLETED' ? AnalysisStatus.COMPLETED : AnalysisStatus.PENDING;
           updateFolderStatus(folderPath, newStatus, result.reason);
         } catch (error) {
@@ -430,8 +437,10 @@ const App: React.FC = () => {
     return (
       <OnboardingScreen
         onFolderSelect={handleFolderSelect}
-        onModelSelect={setSelectedModel}
+        onModelSelect={handleModelChange}
+        onItemsSelect={handleItemsChange}
         selectedModel={selectedModel}
+        selectedItems={selectedVerificationItems}
         fileInputRef={fileInputRef}
       />
     );
