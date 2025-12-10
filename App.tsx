@@ -270,18 +270,27 @@ const App: React.FC = () => {
   const handleDeleteEmptyFolders = () => {
     if (!rootFolder) return;
 
-    const removeEmpty = (folder: FolderItem): FolderItem => ({
-      ...folder,
-      children: folder.children
-        .map(child => child.type === ItemType.FOLDER ? removeEmpty(child as FolderItem) : child)
-        .filter(child => {
-          if (child.type === ItemType.FOLDER) {
-            const f = child as FolderItem;
-            return f.children.some(c => c.type !== ItemType.FOLDER || (c as FolderItem).children.length > 0);
-          }
-          return true;
-        })
-    });
+    const removeEmpty = (folder: FolderItem): FolderItem => {
+      // First, recursively process all child folders
+      const processedChildren = folder.children.map(child =>
+        child.type === ItemType.FOLDER ? removeEmpty(child as FolderItem) : child
+      );
+
+      // Then filter out folders that have no children after processing
+      const filteredChildren = processedChildren.filter(child => {
+        if (child.type === ItemType.FOLDER) {
+          const f = child as FolderItem;
+          // Keep folder only if it has at least one child (file or non-empty folder)
+          return f.children.length > 0;
+        }
+        return true; // Keep non-folder items (files, images)
+      });
+
+      return {
+        ...folder,
+        children: filteredChildren
+      };
+    };
 
     setRootFolder(removeEmpty(rootFolder));
   };

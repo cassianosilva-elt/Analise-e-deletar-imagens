@@ -563,6 +563,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
             </div>
 
             {/* Hidden file input */}
+            {/* @ts-ignore - webkitdirectory is a valid attribute but not in HTMLInputElement type */}
             <input type="file" ref={fileInputRef} webkitdirectory="" multiple className="hidden" onChange={handleFileInputChange} />
 
             {/* Upload Confirmation Modal */}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { Upload, X, FolderUp, AlertTriangle } from 'lucide-react';
 
 interface UploadConfirmModalProps {
@@ -10,12 +10,12 @@ interface UploadConfirmModalProps {
     folderName: string;
 }
 
-const backdropVariants = {
+const backdropVariants: Variants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1 }
 };
 
-const modalVariants = {
+const modalVariants: Variants = {
     hidden: {
         opacity: 0,
         scale: 0.9,
@@ -26,7 +26,7 @@ const modalVariants = {
         scale: 1,
         y: 0,
         transition: {
-            type: 'spring',
+            type: 'spring' as const,
             stiffness: 300,
             damping: 25
         }
@@ -41,12 +41,12 @@ const modalVariants = {
     }
 };
 
-const iconContainerVariants = {
+const iconContainerVariants: Variants = {
     hidden: { scale: 0 },
     visible: {
         scale: 1,
         transition: {
-            type: 'spring',
+            type: 'spring' as const,
             stiffness: 400,
             damping: 20,
             delay: 0.1
