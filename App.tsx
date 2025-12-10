@@ -25,6 +25,7 @@ const App: React.FC = () => {
     configuracoes: true,
     ajuda: true
   });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Folder data state
   const [rootFolder, setRootFolder] = useState<FolderItem | null>(null);
@@ -443,6 +444,8 @@ const App: React.FC = () => {
         activePage={activePage}
         onPageChange={setActivePage}
         pageVisibility={pageVisibility}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">
