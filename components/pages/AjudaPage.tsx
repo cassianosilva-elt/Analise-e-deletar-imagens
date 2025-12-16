@@ -1,5 +1,6 @@
 import React from 'react';
 import { HelpCircle, Keyboard, MessageCircle, Book, ExternalLink, Zap, FolderUp, Wand2, FileSpreadsheet } from 'lucide-react';
+import { TranslationKey } from '../../translations';
 
 const ShortcutItem = ({ keys, description }: { keys: string[]; description: string }) => (
     <div className="flex items-center justify-between py-2">
@@ -32,41 +33,50 @@ const StepItem = ({ icon: Icon, step, title, description }: { icon: React.Elemen
     </div>
 );
 
-const AjudaPage: React.FC = () => {
+const AjudaPage: React.FC<{ darkMode?: boolean; t?: (key: TranslationKey) => string }> = ({ darkMode = false, t }) => {
+    const translate = (key: TranslationKey): string => {
+        if (t) return t(key);
+        return key;
+    };
+    const cardClass = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+    const headerBgClass = darkMode ? 'bg-gray-700/50 border-gray-700' : 'bg-gray-50/50 border-gray-100';
+    const textClass = darkMode ? 'text-gray-100' : 'text-gray-900';
+    const subtextClass = darkMode ? 'text-gray-400' : 'text-gray-500';
+
     return (
-        <div className="flex-1 bg-[#F8F9FA] overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <div className={`flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 ${darkMode ? 'bg-gray-900' : 'bg-[#F8F9FA]'}`}>
             <div className="max-w-3xl mx-auto">
                 {/* Header */}
                 <div className="mb-6 sm:mb-8">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Ajuda</h1>
-                    <p className="text-gray-500 text-sm sm:text-base">Guias e informações sobre o sistema</p>
+                    <h1 className={`text-2xl sm:text-3xl font-bold mb-2 ${textClass}`}>{translate('ajuda')}</h1>
+                    <p className={`text-sm sm:text-base ${subtextClass}`}>{translate('helpDesc')}</p>
                 </div>
 
                 {/* Quick Start Guide */}
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
                     <div className="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
                         <Zap className="w-4 h-4 text-[#FF4D00]" />
-                        <h2 className="font-semibold text-gray-900 text-sm sm:text-base">Início Rápido</h2>
+                        <h2 className="font-semibold text-gray-900 text-sm sm:text-base">{translate('quickStart')}</h2>
                     </div>
 
                     <div className="p-4 sm:p-6 space-y-3">
                         <StepItem
                             icon={FolderUp}
                             step={1}
-                            title="Importe uma pasta"
-                            description="Clique em 'Importar' ou arraste uma pasta contendo as subpastas dos abrigos para análise."
+                            title={translate('step1Title')}
+                            description={translate('step1Desc')}
                         />
                         <StepItem
                             icon={Wand2}
                             step={2}
-                            title="Execute a análise"
-                            description="Selecione as pastas desejadas e clique em 'Analisar' para a IA identificar abrigos concluídos."
+                            title={translate('step2Title')}
+                            description={translate('step2Desc')}
                         />
                         <StepItem
                             icon={FileSpreadsheet}
                             step={3}
-                            title="Exporte o relatório"
-                            description="Baixe o relatório em Excel ou exporte as fotos selecionadas em formato ZIP."
+                            title={translate('step3Title')}
+                            description={translate('step3Desc')}
                         />
                     </div>
                 </div>
@@ -75,15 +85,15 @@ const AjudaPage: React.FC = () => {
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
                     <div className="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
                         <Keyboard className="w-4 h-4 text-gray-600" />
-                        <h2 className="font-semibold text-gray-900 text-sm sm:text-base">Atalhos de Teclado</h2>
+                        <h2 className="font-semibold text-gray-900 text-sm sm:text-base">{translate('shortcutsTitle')}</h2>
                     </div>
 
                     <div className="p-4 sm:p-6 divide-y divide-gray-100">
-                        <ShortcutItem keys={['Esc']} description="Fechar modal / voltar" />
-                        <ShortcutItem keys={['←', '→']} description="Navegar entre imagens" />
-                        <ShortcutItem keys={['+']} description="Zoom in na imagem" />
-                        <ShortcutItem keys={['-']} description="Zoom out na imagem" />
-                        <ShortcutItem keys={['0']} description="Resetar zoom" />
+                        <ShortcutItem keys={['Esc']} description={translate('scClose')} />
+                        <ShortcutItem keys={['←', '→']} description={translate('scNav')} />
+                        <ShortcutItem keys={['+']} description={translate('scZoomIn')} />
+                        <ShortcutItem keys={['-']} description={translate('scZoomOut')} />
+                        <ShortcutItem keys={['0']} description={translate('scReset')} />
                     </div>
                 </div>
 
@@ -91,39 +101,37 @@ const AjudaPage: React.FC = () => {
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
                     <div className="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
                         <MessageCircle className="w-4 h-4 text-gray-600" />
-                        <h2 className="font-semibold text-gray-900 text-sm sm:text-base">Perguntas Frequentes</h2>
+                        <h2 className="font-semibold text-gray-900 text-sm sm:text-base">{translate('faqTitle')}</h2>
                     </div>
 
                     <div className="divide-y divide-gray-100">
                         <details className="group">
                             <summary className="px-4 sm:px-6 py-4 cursor-pointer hover:bg-gray-50 transition-colors list-none flex items-center justify-between">
-                                <span className="font-medium text-gray-900 text-sm">Quais formatos de imagem são suportados?</span>
+                                <span className="font-medium text-gray-900 text-sm">{translate('faq1Q')}</span>
                                 <span className="text-gray-400 group-open:rotate-180 transition-transform">▼</span>
                             </summary>
                             <div className="px-4 sm:px-6 pb-4 text-sm text-gray-600">
-                                O sistema suporta imagens JPG, JPEG, PNG, WEBP e GIF.
+                                {translate('faq1A')}
                             </div>
                         </details>
 
                         <details className="group">
                             <summary className="px-4 sm:px-6 py-4 cursor-pointer hover:bg-gray-50 transition-colors list-none flex items-center justify-between">
-                                <span className="font-medium text-gray-900 text-sm">Como a IA identifica abrigos concluídos?</span>
+                                <span className="font-medium text-gray-900 text-sm">{translate('faq2Q')}</span>
                                 <span className="text-gray-400 group-open:rotate-180 transition-transform">▼</span>
                             </summary>
                             <div className="px-4 sm:px-6 pb-4 text-sm text-gray-600">
-                                A IA analisa as imagens procurando por estruturas de abrigo completas, presença de totens instalados
-                                e elementos visuais que indicam a finalização da instalação.
+                                {translate('faq2A')}
                             </div>
                         </details>
 
                         <details className="group">
                             <summary className="px-4 sm:px-6 py-4 cursor-pointer hover:bg-gray-50 transition-colors list-none flex items-center justify-between">
-                                <span className="font-medium text-gray-900 text-sm">Posso corrigir uma análise incorreta?</span>
+                                <span className="font-medium text-gray-900 text-sm">{translate('faq3Q')}</span>
                                 <span className="text-gray-400 group-open:rotate-180 transition-transform">▼</span>
                             </summary>
                             <div className="px-4 sm:px-6 pb-4 text-sm text-gray-600">
-                                Sim! Você pode alterar manualmente o status de qualquer pasta usando os botões verde (concluído)
-                                e laranja (pendente) na listagem de pastas.
+                                {translate('faq3A')}
                             </div>
                         </details>
                     </div>
@@ -135,10 +143,10 @@ const AjudaPage: React.FC = () => {
                         <div className="p-2 bg-[#FF4D00] rounded-lg">
                             <HelpCircle className="w-5 h-5" />
                         </div>
-                        <h3 className="font-semibold text-lg">Precisa de mais ajuda?</h3>
+                        <h3 className="font-semibold text-lg">{translate('needHelp')}</h3>
                     </div>
                     <p className="text-white/70 text-sm mb-4">
-                        Entre em contato com o suporte técnico para dúvidas ou problemas.
+                        {translate('contactSupport')}
                     </p>
                     <a
                         href="mailto:suporte@eletromidia.com.br"

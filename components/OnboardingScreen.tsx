@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
-import { FolderUp, Sparkles, Zap, ChevronRight, Check, ArrowRight, Layers, FileCheck, FolderArchive, BarChart3, AlertCircle } from 'lucide-react';
+import { FolderUp, Sparkles, Zap, ChevronRight, Check, ArrowRight, Layers, FileCheck, FolderArchive, BarChart3, AlertCircle, Moon, Sun, Globe } from 'lucide-react';
 import { GeminiModel } from '../services/geminiService';
 import { VerificationItemType, VERIFICATION_ITEMS } from '../types';
 import UploadConfirmModal from './ui/UploadConfirmModal';
+import { Language, TranslationKey } from '../translations';
 
 interface OnboardingScreenProps {
     onFolderSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -12,6 +13,11 @@ interface OnboardingScreenProps {
     selectedModel: GeminiModel;
     selectedItems: VerificationItemType[];
     fileInputRef: React.RefObject<HTMLInputElement>;
+    darkMode: boolean;
+    onDarkModeChange: (enabled: boolean) => void;
+    language: Language;
+    onLanguageChange: (lang: Language) => void;
+    t: (key: TranslationKey) => string;
 }
 
 // Animation variants
@@ -60,7 +66,12 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
     onItemsSelect,
     selectedModel,
     selectedItems,
-    fileInputRef
+    fileInputRef,
+    darkMode,
+    onDarkModeChange,
+    language,
+    onLanguageChange,
+    t
 }) => {
     const [[activeStep, direction], setActiveStep] = useState<[1 | 2 | 3, number]>([1, 0]);
     const [showUploadConfirm, setShowUploadConfirm] = useState(false);
@@ -94,27 +105,27 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
     const models = [
         {
             id: 'gemini-flash-latest' as GeminiModel,
-            name: 'Gemini Flash',
-            subtitle: 'Recomendado',
-            description: 'Alta precisão na identificação de abrigos',
+            name: t('geminiFlash'),
+            subtitle: t('recommended'),
+            description: t('highPrecision'),
             icon: Sparkles,
             recommended: true
         },
         {
             id: 'gemini-flash-lite-latest' as GeminiModel,
-            name: 'Gemini Flash Lite',
-            subtitle: 'Rápido',
-            description: 'Ideal para grandes volumes de análise',
+            name: t('geminiFlashLite'),
+            subtitle: t('fast'),
+            description: t('fastProcessing'),
             icon: Zap,
             recommended: false
         }
     ];
 
     const features = [
-        { icon: FileCheck, label: 'Detecção automática de abrigos concluídos' },
-        { icon: Layers, label: 'Seleção inteligente das melhores fotos' },
-        { icon: BarChart3, label: 'Relatórios estruturados em Excel' },
-        { icon: FolderArchive, label: 'Exportação em ZIP organizado' }
+        { icon: FileCheck, label: t('featureAutoDetect') },
+        { icon: Layers, label: t('featureSmartSelect') },
+        { icon: BarChart3, label: t('featureReports') },
+        { icon: FolderArchive, label: t('featureZip') }
     ];
 
     const handleToggleItem = (itemId: VerificationItemType) => {
@@ -193,17 +204,17 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
         const item = items[0];
         const entry = item.webkitGetAsEntry?.();
         if (!entry) {
-            setDragError('Seu navegador não suporta arrastar pastas.');
+            setDragError(t('dragErrorNoFile'));
             return;
         }
         if (!entry.isDirectory) {
-            setDragError('Por favor, arraste uma pasta.');
+            setDragError(t('dragErrorNoFile'));
             return;
         }
         try {
             const files = await readAllEntries(entry as FileSystemDirectoryEntry);
             if (files.length === 0) {
-                setDragError('A pasta parece estar vazia.');
+                setDragError(t('dragErrorEmpty'));
                 return;
             }
             setPendingFiles(files);
@@ -211,13 +222,17 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
             setShowUploadConfirm(true);
         } catch (err) {
             console.error('Error processing dropped folder:', err);
-            setDragError('Erro ao processar pasta.');
+            setDragError(t('dragErrorNoFile'));
         }
     }, []);
 
     const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
+
+        // Reset value to allow re-selection
+        e.target.value = '';
+
         const firstFilePath = files[0].webkitRelativePath;
         const folderName = firstFilePath.split('/')[0] || 'Pasta selecionada';
         const filesArray = Array.from(files);
@@ -241,11 +256,11 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
     }, []);
 
     return (
-        <div className="min-h-screen w-full bg-[#FAFAFA] overflow-y-auto overflow-x-hidden font-['Rethink_Sans']">
+        <div className={`min-h-screen w-full overflow-y-auto overflow-x-hidden font-['Rethink_Sans'] transition-colors duration-300 ${darkMode ? 'bg-gray-900' : 'bg-[#FAFAFA]'}`}>
             {/* Background decorations */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden">
-                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.5, ease: 'easeOut' }} className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-orange-100/60 via-orange-50/30 to-transparent rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/4" />
-                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.5, delay: 0.3, ease: 'easeOut' }} className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-gray-100/80 to-transparent rounded-full blur-2xl transform -translate-x-1/4 translate-y-1/4" />
+                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.5, ease: 'easeOut' }} className={`absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/4 ${darkMode ? 'from-orange-900/20 via-orange-900/10 to-transparent' : 'from-orange-100/60 via-orange-50/30 to-transparent'}`} />
+                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.5, delay: 0.3, ease: 'easeOut' }} className={`absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr rounded-full blur-2xl transform -translate-x-1/4 translate-y-1/4 ${darkMode ? 'from-gray-800/80 to-transparent' : 'from-gray-100/80 to-transparent'}`} />
                 <motion.div animate={floatingAnimation} className="absolute top-1/4 right-1/4 w-3 h-3 bg-orange-300/40 rounded-full blur-sm" />
                 <motion.div animate={floatingAnimation} className="absolute top-2/3 left-1/3 w-2 h-2 bg-orange-200/50 rounded-full blur-sm" />
             </div>
@@ -258,10 +273,36 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                             <img src="./assets/ELETRO-DESKTOP.png" alt="Eletromidia" className="hidden sm:block h-10 sm:h-11" />
                             <img src="./assets/ELETRO-MOBILE.png" alt="Eletromidia" className="block sm:hidden h-8" />
                         </motion.div>
-                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-full border border-gray-200 shadow-sm">
-                            <motion.div className="w-2 h-2 bg-emerald-500 rounded-full" animate={{ scale: [1, 1.2, 1], opacity: [1, 0.7, 1] }} transition={{ duration: 2, repeat: Infinity }} />
-                            <span className="text-xs text-gray-600 font-medium">Online</span>
-                        </motion.div>
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            {/* Language Toggle */}
+                            <motion.button
+                                onClick={() => onLanguageChange(language === 'pt' ? 'en' : 'pt')}
+                                className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-full border transition-colors ${darkMode ? 'bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-200' : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700'}`}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                title={language === 'pt' ? 'Switch to English' : 'Mudar para Português'}
+                            >
+                                <span className="text-sm">{language === 'pt' ? '🇧🇷' : '🇺🇸'}</span>
+                                <span className="text-xs font-medium hidden sm:inline">{language === 'pt' ? 'PT' : 'EN'}</span>
+                            </motion.button>
+
+                            {/* Dark Mode Toggle */}
+                            <motion.button
+                                onClick={() => onDarkModeChange(!darkMode)}
+                                className={`p-2 rounded-full border transition-colors ${darkMode ? 'bg-gray-800 border-gray-700 hover:bg-gray-700 text-yellow-400' : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700'}`}
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                title={darkMode ? 'Light Mode' : 'Dark Mode'}
+                            >
+                                {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                            </motion.button>
+
+                            {/* Online Indicator */}
+                            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} className={`flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                                <motion.div className="w-2 h-2 bg-emerald-500 rounded-full" animate={{ scale: [1, 1.2, 1], opacity: [1, 0.7, 1] }} transition={{ duration: 2, repeat: Infinity }} />
+                                <span className={`text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Online</span>
+                            </motion.div>
+                        </div>
                     </div>
                 </motion.header>
 
@@ -270,35 +311,35 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                     <div className="max-w-6xl mx-auto">
                         {/* Welcome Section */}
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} className="text-center mb-8 sm:mb-12">
-                            <motion.h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3">
-                                Bem-vindo ao sistema de <span className="text-[#FF4D00]">Fiscalização</span>
+                            <motion.h2 className={`text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                {t('welcomeTitle')} <span className="text-[#FF4D00]">{t('fiscalizacao')}</span>
                             </motion.h2>
-                            <motion.p className="text-gray-500 text-sm sm:text-base max-w-xl mx-auto">
-                                Configure a análise em três passos simples e deixe a IA identificar automaticamente os equipamentos.
+                            <motion.p className={`text-sm sm:text-base max-w-xl mx-auto ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                {t('welcomeDesc')}
                             </motion.p>
                         </motion.div>
 
                         {/* Steps Container */}
-                        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, type: 'spring', stiffness: 150 }} className="bg-white rounded-2xl sm:rounded-3xl shadow-xl shadow-gray-200/60 border border-gray-100 overflow-hidden">
+                        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, type: 'spring', stiffness: 150 }} className={`rounded-2xl sm:rounded-3xl shadow-xl border overflow-hidden ${darkMode ? 'bg-gray-800 border-gray-700 shadow-black/30' : 'bg-white border-gray-100 shadow-gray-200/60'}`}>
                             {/* Steps Header - 3 steps */}
-                            <div className="flex border-b border-gray-100">
+                            <div className={`flex border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
                                 {[1, 2, 3].map((step) => (
                                     <motion.button
                                         key={step}
                                         onClick={() => handleStepChange(step as 1 | 2 | 3)}
-                                        className={`flex-1 px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-center gap-2 sm:gap-3 transition-colors ${activeStep === step ? 'bg-gradient-to-r from-[#FF4D00]/5 to-transparent border-b-2 border-[#FF4D00]' : 'hover:bg-gray-50'}`}
-                                        whileHover={{ backgroundColor: activeStep !== step ? 'rgba(0,0,0,0.02)' : undefined }}
+                                        className={`flex-1 px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-center gap-2 sm:gap-3 transition-colors ${activeStep === step ? 'bg-gradient-to-r from-[#FF4D00]/5 to-transparent border-b-2 border-[#FF4D00]' : darkMode ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50'}`}
+                                        whileHover={{ backgroundColor: activeStep !== step ? (darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)') : undefined }}
                                         whileTap={{ scale: 0.98 }}
                                     >
                                         <motion.div
-                                            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-sm font-bold ${activeStep === step ? 'bg-[#FF4D00] text-white shadow-lg shadow-orange-500/30' : step < activeStep ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-600'}`}
+                                            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-sm font-bold ${activeStep === step ? 'bg-[#FF4D00] text-white shadow-lg shadow-orange-500/30' : step < activeStep ? 'bg-emerald-500 text-white' : darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-200 text-gray-600'}`}
                                             animate={activeStep === step ? { scale: [1, 1.1, 1] } : {}}
                                             transition={{ duration: 0.3 }}
                                         >
                                             {step < activeStep ? <Check className="w-4 h-4" /> : step}
                                         </motion.div>
-                                        <span className={`font-medium text-sm sm:text-base ${activeStep === step ? 'text-gray-900' : 'text-gray-500'}`}>
-                                            {step === 1 ? 'Modelo IA' : step === 2 ? 'Itens' : 'Pasta'}
+                                        <span className={`font-medium text-sm sm:text-base ${activeStep === step ? (darkMode ? 'text-white' : 'text-gray-900') : (darkMode ? 'text-gray-500' : 'text-gray-500')}`}>
+                                            {step === 1 ? t('stepModel') : step === 2 ? t('stepItems') : t('stepFolder')}
                                         </span>
                                     </motion.button>
                                 ))}
@@ -311,8 +352,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                                         {activeStep === 1 ? (
                                             /* Step 1: Model Selection */
                                             <motion.div key="step1" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ opacity: { duration: 0.2 }, x: { type: 'spring', stiffness: 300, damping: 30 } }}>
-                                                <motion.p className="text-gray-600 text-sm sm:text-base mb-6 text-center">
-                                                    Escolha o modelo de IA que será usado para analisar suas fotos.
+                                                <motion.p className={`text-sm sm:text-base mb-6 text-center ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                    {t('stepModelDesc')}
                                                 </motion.p>
                                                 <motion.div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto mb-8" variants={containerVariants} initial="hidden" animate="visible">
                                                     {models.map((model) => {
@@ -327,27 +368,27 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                                                                 variants={cardVariants}
                                                                 whileHover="hover"
                                                                 whileTap="tap"
-                                                                className={`relative p-5 sm:p-6 rounded-2xl text-left transition-colors border-2 ${isSelected ? 'border-[#FF4D00] bg-gradient-to-br from-orange-50 to-white shadow-lg shadow-orange-500/10' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+                                                                className={`relative p-5 sm:p-6 rounded-2xl text-left transition-colors border-2 ${isSelected ? 'border-[#FF4D00] bg-gradient-to-br from-orange-50 to-white shadow-lg shadow-orange-500/10' : darkMode ? 'border-gray-700 bg-gray-700 hover:border-gray-600' : 'border-gray-200 bg-white hover:border-gray-300'}`}
                                                             >
                                                                 {model.recommended && (
                                                                     <motion.div className="absolute -top-2.5 left-4 px-2.5 py-0.5 bg-gradient-to-r from-[#FF4D00] to-[#FF6B00] text-white text-[10px] font-bold uppercase rounded-full shadow-sm">
-                                                                        Recomendado
+                                                                        {t('recommended')}
                                                                     </motion.div>
                                                                 )}
                                                                 <div className="flex items-start gap-4">
-                                                                    <motion.div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-gradient-to-br from-[#FF4D00] to-[#FF6B00] shadow-lg shadow-orange-500/30' : 'bg-gray-100'}`}>
-                                                                        <Icon className={`w-6 h-6 ${isSelected ? 'text-white' : 'text-gray-600'}`} />
+                                                                    <motion.div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-gradient-to-br from-[#FF4D00] to-[#FF6B00] shadow-lg shadow-orange-500/30' : darkMode ? 'bg-gray-600' : 'bg-gray-100'}`}>
+                                                                        <Icon className={`w-6 h-6 ${isSelected ? 'text-white' : darkMode ? 'text-gray-300' : 'text-gray-600'}`} />
                                                                     </motion.div>
                                                                     <div className="flex-1 min-w-0">
                                                                         <div className="flex items-center gap-2">
-                                                                            <h3 className="font-semibold text-gray-900">{model.name}</h3>
+                                                                            <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{model.name}</h3>
                                                                             {isSelected && (
                                                                                 <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
                                                                                     <Check className="w-3 h-3 text-white" />
                                                                                 </div>
                                                                             )}
                                                                         </div>
-                                                                        <p className="text-sm text-gray-500 mt-1">{model.description}</p>
+                                                                        <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{model.description}</p>
                                                                     </div>
                                                                 </div>
                                                             </motion.button>
@@ -355,8 +396,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                                                     })}
                                                 </motion.div>
                                                 <motion.div className="flex justify-center">
-                                                    <motion.button onClick={() => handleStepChange(2)} className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white font-medium rounded-xl hover:bg-gray-800 transition-colors shadow-lg" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                                                        Continuar
+                                                    <motion.button onClick={() => handleStepChange(2)} className={`inline-flex items-center gap-2 px-6 py-3 font-medium rounded-xl transition-colors shadow-lg ${darkMode ? 'bg-white text-gray-900 hover:bg-gray-200' : 'bg-gray-900 text-white hover:bg-gray-800'}`} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                                        {t('continue')}
                                                         <ArrowRight className="w-4 h-4" />
                                                     </motion.button>
                                                 </motion.div>
@@ -364,8 +405,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                                         ) : activeStep === 2 ? (
                                             /* Step 2: Item Selection */
                                             <motion.div key="step2" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ opacity: { duration: 0.2 }, x: { type: 'spring', stiffness: 300, damping: 30 } }}>
-                                                <motion.p className="text-gray-600 text-sm sm:text-base mb-6 text-center">
-                                                    Selecione quais equipamentos a IA deve identificar nas imagens.
+                                                <motion.p className={`text-sm sm:text-base mb-6 text-center ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                    {t('stepItemsDesc')}
                                                 </motion.p>
                                                 <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-3xl mx-auto mb-6" variants={containerVariants} initial="hidden" animate="visible">
                                                     {VERIFICATION_ITEMS.map(item => {
@@ -377,26 +418,26 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                                                                 variants={cardVariants}
                                                                 whileHover="hover"
                                                                 whileTap="tap"
-                                                                className={`p-4 rounded-xl border-2 transition-all text-left ${isSelected ? 'border-[#FF4D00] bg-orange-50 shadow-md' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'}`}
+                                                                className={`p-4 rounded-xl border-2 transition-all text-left ${isSelected ? 'border-[#FF4D00] bg-orange-50 dark:bg-orange-900/20 shadow-md' : darkMode ? 'border-gray-700 bg-gray-700 hover:border-gray-600 hover:bg-gray-600' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'}`}
                                                             >
                                                                 <div className="flex items-center justify-between mb-2">
-                                                                    <h3 className={`font-semibold ${isSelected ? 'text-[#FF4D00]' : 'text-gray-700'}`}>{item.label}</h3>
-                                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-[#FF4D00] border-[#FF4D00]' : 'border-gray-300'}`}>
+                                                                    <h3 className={`font-semibold ${isSelected ? 'text-[#FF4D00]' : darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{t(`item_${item.id}_label` as TranslationKey)}</h3>
+                                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-[#FF4D00] border-[#FF4D00]' : darkMode ? 'border-gray-500' : 'border-gray-300'}`}>
                                                                         {isSelected && <Check className="w-3 h-3 text-white" />}
                                                                     </div>
                                                                 </div>
-                                                                <p className="text-xs text-gray-500">{item.description}</p>
+                                                                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t(`item_${item.id}_desc` as TranslationKey)}</p>
                                                             </motion.button>
                                                         );
                                                     })}
                                                 </motion.div>
-                                                <p className="text-xs text-gray-400 text-center mb-6">Pelo menos um item deve estar selecionado</p>
+                                                <p className={`text-xs text-center mb-6 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{t('selectAtLeastOne')}</p>
                                                 <motion.div className="flex justify-center gap-3">
-                                                    <motion.button onClick={() => handleStepChange(1)} className="inline-flex items-center gap-2 px-4 py-2.5 text-gray-600 hover:text-gray-900 font-medium transition-colors" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                                                        Voltar
+                                                    <motion.button onClick={() => handleStepChange(1)} className={`inline-flex items-center gap-2 px-4 py-2.5 font-medium transition-colors ${darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-900'}`} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                                                        {t('back')}
                                                     </motion.button>
-                                                    <motion.button onClick={() => handleStepChange(3)} className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white font-medium rounded-xl hover:bg-gray-800 transition-colors shadow-lg" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                                                        Continuar
+                                                    <motion.button onClick={() => handleStepChange(3)} className={`inline-flex items-center gap-2 px-6 py-3 font-medium rounded-xl transition-colors shadow-lg ${darkMode ? 'bg-white text-gray-900 hover:bg-gray-200' : 'bg-gray-900 text-white hover:bg-gray-800'}`} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                                        {t('continue')}
                                                         <ArrowRight className="w-4 h-4" />
                                                     </motion.button>
                                                 </motion.div>
@@ -404,8 +445,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                                         ) : (
                                             /* Step 3: Folder Selection */
                                             <motion.div key="step3" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ opacity: { duration: 0.2 }, x: { type: 'spring', stiffness: 300, damping: 30 } }}>
-                                                <motion.p className="text-gray-600 text-sm sm:text-base mb-6 text-center">
-                                                    Selecione a pasta raiz contendo as subpastas dos abrigos para análise.
+                                                <motion.p className={`text-sm sm:text-base mb-6 text-center ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                    {t('stepFolderDesc')}
                                                 </motion.p>
                                                 <AnimatePresence>
                                                     {dragError && (
@@ -417,54 +458,54 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                                                 </AnimatePresence>
                                                 <motion.div onDragEnter={handleDragEnter} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={() => fileInputRef.current?.click()} className="relative max-w-xl mx-auto cursor-pointer" variants={uploadAreaVariants} initial="hidden" animate="visible">
                                                     <motion.div className="absolute inset-0 bg-gradient-to-br from-[#FF4D00]/20 to-[#FF6B00]/10 rounded-2xl blur-xl" animate={pulseAnimation} />
-                                                    <motion.div className={`relative border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center bg-gradient-to-br from-gray-50/50 to-white transition-all duration-300 ${isDragging ? 'border-[#FF4D00] bg-orange-50/50 scale-[1.02] shadow-xl shadow-orange-500/20' : 'border-gray-300 hover:border-[#FF4D00] hover:shadow-lg'}`}>
+                                                    <motion.div className={`relative border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center transition-all duration-300 ${darkMode ? 'bg-gradient-to-br from-gray-800 to-gray-700' : 'bg-gradient-to-br from-gray-50/50 to-white'} ${isDragging ? 'border-[#FF4D00] bg-orange-50/50 scale-[1.02] shadow-xl shadow-orange-500/20' : darkMode ? 'border-gray-600 hover:border-[#FF4D00]' : 'border-gray-300 hover:border-[#FF4D00] hover:shadow-lg'}`}>
                                                         <motion.div className="relative inline-block mb-5" animate={floatingAnimation}>
                                                             <motion.div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center shadow-xl transition-all duration-300 ${isDragging ? 'bg-gradient-to-br from-[#FF6B00] to-[#FF8C00] shadow-orange-500/40 scale-110' : 'bg-gradient-to-br from-[#FF4D00] to-[#FF6B00] shadow-orange-500/25'}`}>
                                                                 <FolderUp className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                                                             </motion.div>
                                                         </motion.div>
-                                                        <h3 className={`text-lg sm:text-xl font-bold mb-2 transition-colors ${isDragging ? 'text-[#FF4D00]' : 'text-gray-900'}`}>
-                                                            {isDragging ? 'Solte a pasta aqui!' : 'Clique ou arraste a pasta'}
+                                                        <h3 className={`text-lg sm:text-xl font-bold mb-2 transition-colors ${isDragging ? 'text-[#FF4D00]' : darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+                                                            {isDragging ? t('folderDragDrop') : t('folderDragTitle')}
                                                         </h3>
-                                                        <p className="text-gray-500 text-sm mb-6">
-                                                            {isDragging ? 'Libere para carregar a pasta' : 'Selecione a pasta "Fiscalização" com as subpastas'}
+                                                        <p className={`text-sm mb-6 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                            {isDragging ? t('folderDragRelease') : t('folderDragDesc')}
                                                         </p>
                                                         <motion.div className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#FF4D00] to-[#FF6B00] text-white font-semibold rounded-xl shadow-lg shadow-orange-500/25" whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.95 }}>
-                                                            <span>Selecionar Pasta</span>
+                                                            <span>{t('selectFolderBtn')}</span>
                                                             <ChevronRight className="w-4 h-4" />
                                                         </motion.div>
                                                     </motion.div>
                                                 </motion.div>
 
                                                 {/* Config Summary */}
-                                                <motion.div className="max-w-xl mx-auto mt-6 p-4 bg-gray-50 rounded-xl">
+                                                <motion.div className={`max-w-xl mx-auto mt-6 p-4 rounded-xl ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-50'}`}>
                                                     <div className="flex items-center gap-3 mb-3">
                                                         <motion.div className="w-10 h-10 bg-gradient-to-br from-[#FF4D00] to-[#FF6B00] rounded-lg flex items-center justify-center flex-shrink-0">
                                                             {selectedModel === 'gemini-flash-latest' ? <Sparkles className="w-5 h-5 text-white" /> : <Zap className="w-5 h-5 text-white" />}
                                                         </motion.div>
                                                         <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-medium text-gray-900">
-                                                                Modelo: {selectedModel === 'gemini-flash-latest' ? 'Gemini Flash' : 'Gemini Flash Lite'}
+                                                            <p className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                                                                {t('configSummaryModel')}: {selectedModel === 'gemini-flash-latest' ? t('geminiFlash') : t('geminiFlashLite')}
                                                             </p>
-                                                            <p className="text-xs text-gray-500">
-                                                                {selectedModel === 'gemini-flash-latest' ? 'Alta precisão' : 'Processamento rápido'}
+                                                            <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                                {selectedModel === 'gemini-flash-latest' ? t('highPrecision') : t('fastProcessing')}
                                                             </p>
                                                         </div>
                                                         <motion.button onClick={() => handleStepChange(1)} className="text-sm text-[#FF4D00] hover:underline font-medium">
-                                                            Alterar
+                                                            {t('change')}
                                                         </motion.button>
                                                     </div>
-                                                    <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200">
+                                                    <div className={`flex flex-wrap gap-2 pt-2 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                                                         {selectedItems.map(itemId => {
                                                             const item = VERIFICATION_ITEMS.find(v => v.id === itemId);
                                                             return item ? (
-                                                                <span key={itemId} className="px-2 py-1 bg-orange-100 text-[#FF4D00] text-xs rounded-full font-medium">
-                                                                    {item.label}
+                                                                <span key={itemId} className={`px-2 py-1 text-xs rounded-full font-medium ${darkMode ? 'bg-orange-900/30 text-orange-400' : 'bg-orange-100 text-[#FF4D00]'}`}>
+                                                                    {t(`item_${item.id}_label` as TranslationKey)}
                                                                 </span>
                                                             ) : null;
                                                         })}
                                                         <motion.button onClick={() => handleStepChange(2)} className="text-xs text-[#FF4D00] hover:underline font-medium ml-auto">
-                                                            Editar itens
+                                                            {t('editItems')}
                                                         </motion.button>
                                                     </div>
                                                 </motion.div>
@@ -480,11 +521,11 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                             {features.map((feature, idx) => {
                                 const Icon = feature.icon;
                                 return (
-                                    <motion.div key={idx} variants={itemVariants} whileHover={{ scale: 1.03, y: -2 }} className="flex items-center gap-3 p-3 sm:p-4 bg-white rounded-xl border border-gray-100 shadow-sm cursor-default">
-                                        <motion.div className="w-9 h-9 sm:w-10 sm:h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                            <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-[#FF4D00]" />
+                                    <motion.div key={idx} variants={itemVariants} whileHover={{ scale: 1.03, y: -2 }} className={`flex items-center gap-3 p-3 sm:p-4 rounded-xl border shadow-sm cursor-default ${darkMode ? 'bg-gray-800 border-gray-700 transition-colors' : 'bg-white border-gray-100'}`}>
+                                        <motion.div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${darkMode ? 'bg-orange-900/30' : 'bg-orange-100'}`}>
+                                            <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${darkMode ? 'text-orange-400' : 'text-[#FF4D00]'}`} />
                                         </motion.div>
-                                        <span className="text-xs sm:text-sm text-gray-700 font-medium leading-tight">{feature.label}</span>
+                                        <span className={`text-xs sm:text-sm font-medium leading-tight ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{feature.label}</span>
                                     </motion.div>
                                 );
                             })}
@@ -498,7 +539,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
             <input type="file" ref={fileInputRef} webkitdirectory="" multiple className="hidden" onChange={handleFileInputChange} />
 
             {/* Upload Confirmation Modal */}
-            <UploadConfirmModal isOpen={showUploadConfirm} onConfirm={handleConfirmUpload} onCancel={handleCancelUpload} fileCount={pendingFiles.length} folderName={pendingFolderName} />
+            {/* Upload Confirmation Modal */}
+            <UploadConfirmModal isOpen={showUploadConfirm} onConfirm={handleConfirmUpload} onCancel={handleCancelUpload} fileCount={pendingFiles.length} folderName={pendingFolderName} darkMode={darkMode} t={t} />
         </div>
     );
 };

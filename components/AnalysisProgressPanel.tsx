@@ -1,5 +1,6 @@
 import React from 'react';
 import { Loader2, CheckCircle2, AlertCircle, X, ChevronDown, ChevronUp, FolderOpen } from 'lucide-react';
+import { TranslationKey } from '../translations';
 
 interface AnalysisProgressPanelProps {
     isVisible: boolean;
@@ -12,6 +13,7 @@ interface AnalysisProgressPanelProps {
     onClose: () => void;
     onToggle: () => void;
     isMinimized: boolean;
+    t?: (key: TranslationKey) => string;
 }
 
 const AnalysisProgressPanel: React.FC<AnalysisProgressPanelProps> = ({
@@ -24,8 +26,14 @@ const AnalysisProgressPanel: React.FC<AnalysisProgressPanelProps> = ({
     pendingCount,
     onClose,
     onToggle,
-    isMinimized
+    isMinimized,
+    t
 }) => {
+    const translate = (key: TranslationKey): string => {
+        if (t) return t(key);
+        return key;
+    };
+
     if (!isVisible) return null;
 
     const progressPercent = totalFolders > 0 ? Math.round((processedCount / totalFolders) * 100) : 0;
@@ -45,7 +53,7 @@ const AnalysisProgressPanel: React.FC<AnalysisProgressPanelProps> = ({
                             <CheckCircle2 className="w-5 h-5" />
                         )}
                         <span className="font-semibold text-sm">
-                            {isProcessing ? 'Analisando...' : 'Análise Concluída'}
+                            {isProcessing ? translate('processing') : translate('analysisComplete')}
                         </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -74,7 +82,7 @@ const AnalysisProgressPanel: React.FC<AnalysisProgressPanelProps> = ({
                         {/* Progress Bar */}
                         <div className="mb-4">
                             <div className="flex justify-between text-xs text-gray-500 mb-1">
-                                <span>Progresso</span>
+                                <span>{translate('progress')}</span>
                                 <span className="font-medium text-gray-700">{progressPercent}%</span>
                             </div>
                             <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -101,14 +109,14 @@ const AnalysisProgressPanel: React.FC<AnalysisProgressPanelProps> = ({
                                 <CheckCircle2 className="w-5 h-5 text-green-600" />
                                 <div>
                                     <div className="text-lg font-bold text-green-700">{completedCount}</div>
-                                    <div className="text-[10px] text-green-600 uppercase tracking-wide">Concluídas</div>
+                                    <div className="text-[10px] text-green-600 uppercase tracking-wide">{translate('completedStats')}</div>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 p-3 bg-amber-50 rounded-lg border border-amber-100">
                                 <AlertCircle className="w-5 h-5 text-amber-600" />
                                 <div>
                                     <div className="text-lg font-bold text-amber-700">{pendingCount}</div>
-                                    <div className="text-[10px] text-amber-600 uppercase tracking-wide">Pendentes</div>
+                                    <div className="text-[10px] text-amber-600 uppercase tracking-wide">{translate('pendingStats')}</div>
                                 </div>
                             </div>
                         </div>

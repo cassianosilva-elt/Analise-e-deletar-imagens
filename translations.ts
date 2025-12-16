@@ -1,0 +1,436 @@
+// Translations for Portuguese and English
+export type Language = 'pt' | 'en';
+
+export const translations = {
+    pt: {
+        // General
+        appName: 'Eletromidia Fiscalização AI',
+        version: 'v1.0',
+        copyright: '© 2024 Eletromidia. Todos os direitos reservados.',
+
+        // Sidebar
+        dashboard: 'Dashboard',
+        relatorios: 'Relatórios',
+        ferramentas: 'Ferramentas',
+        configuracoes: 'Configurações',
+        ajuda: 'Ajuda',
+        sectionMain: 'Principal',
+        sectionSystem: 'Sistema',
+
+        // Settings Page
+        settingsTitle: 'Configurações',
+        settingsSubtitle: 'Personalize sua experiência no sistema',
+
+        // Page Visibility Section
+        pageVisibility: 'Visibilidade das Páginas',
+        relatoriosLabel: 'Relatórios',
+        relatoriosDesc: 'Estatísticas e exportação de dados',
+        configuracoesLabel: 'Configurações',
+        configuracoesDesc: 'Personalização do sistema',
+        ajudaLabel: 'Ajuda',
+        ajudaDesc: 'Guias e documentação',
+        dashboardNote: 'Nota: O Dashboard é sempre visível por ser a página principal.',
+
+        // AI Model Section
+        aiModel: 'Modelo de IA',
+        geminiFlash: 'Gemini Flash',
+        geminiFlashDesc: 'Alta precisão na identificação',
+        geminiFlashLite: 'Gemini Flash Lite',
+        geminiFlashLiteDesc: 'Processamento mais rápido',
+        active: 'Ativo',
+
+        // Appearance Section
+        appearance: 'Aparência',
+        darkMode: 'Modo Escuro',
+        darkModeDesc: 'Ativar tema escuro para reduzir cansaço visual',
+
+        // Language Section
+        language: 'Idioma',
+        languageDesc: 'Escolha o idioma da interface',
+        portuguese: 'Português',
+        english: 'English',
+
+        // TopBar
+        openFolder: 'Abrir Pasta',
+        runAI: 'Analisar com IA',
+        exportReport: 'Exportar Relatório',
+        exportZip: 'Exportar ZIP',
+        deleteEmpty: 'Apagar Vazias',
+        selectAll: 'Selecionar Todas',
+        clearSelection: 'Limpar Seleção',
+        processing: 'Processando...',
+
+        // Status
+        completed: 'Concluído',
+        pending: 'Pendente',
+        unchecked: 'Não verificado',
+
+        // Reports
+        totalFolders: 'Total de Pastas',
+        completedFolders: 'Pastas Concluídas',
+        pendingFolders: 'Pastas Pendentes',
+        totalImages: 'Total de Imagens',
+
+        // Onboarding
+        welcomeTitle: 'Bem-vindo ao sistema de',
+        fiscalizacao: 'Fiscalização',
+        welcomeDesc: 'Configure a análise em três passos simples e deixe a IA identificar automaticamente os equipamentos.',
+        stepModel: 'Modelo IA',
+        stepItems: 'Itens',
+        stepFolder: 'Pasta',
+        stepModelDesc: 'Escolha o modelo de IA que será usado para analisar suas fotos.',
+        stepItemsDesc: 'Selecione quais equipamentos a IA deve identificar nas imagens.',
+        stepFolderDesc: 'Selecione a pasta raiz contendo as subpastas dos abrigos para análise.',
+        recommended: 'Recomendado',
+        fast: 'Rápido',
+        continue: 'Continuar',
+        back: 'Voltar',
+        selectAtLeastOne: 'Pelo menos um item deve estar selecionado',
+        folderDragTitle: 'Clique ou arraste a pasta',
+        folderDragDrop: 'Solte a pasta aqui!',
+        folderDragDesc: 'Selecione a pasta "Fiscalização" com as subpastas',
+        folderDragRelease: 'Libere para carregar a pasta',
+        selectFolderBtn: 'Selecionar Pasta',
+        dragErrorEmpty: 'A pasta parece estar vazia.',
+        dragErrorNoFile: 'Nenhum arquivo detectado.',
+        configSummaryModel: 'Modelo',
+        highPrecision: 'Alta precisão',
+        fastProcessing: 'Processamento rápido',
+        change: 'Alterar',
+        editItems: 'Editar itens',
+
+        // Features
+        featureAutoDetect: 'Detecção automática de abrigos concluídos',
+        featureSmartSelect: 'Seleção inteligente das melhores fotos',
+        featureReports: 'Relatórios estruturados em Excel',
+        featureZip: 'Exportação em ZIP organizado',
+
+        // Items
+        item_abrigo_label: 'Abrigo',
+        item_abrigo_desc: 'Abrigo de ônibus completo',
+        item_luminaria_label: 'Luminárias',
+        item_luminaria_desc: 'Luminárias do abrigo',
+        item_totem_estatico_label: 'Totem Estático',
+        item_totem_estatico_desc: 'Totem publicitário estático',
+        item_totem_digital_label: 'Totem Digital',
+        item_totem_digital_desc: 'Totem publicitário digital',
+        item_fundacao_label: 'Fundação',
+        item_fundacao_desc: 'Base/fundação da estrutura',
+
+        // Upload Modal
+        confirmUploadTitle: 'Confirmar Upload?',
+        confirmUploadDesc: 'Você está prestes a analisar a pasta',
+        containing: 'Contendo',
+        files: 'arquivos',
+        startAnalysis: 'Iniciar Análise',
+        cancel: 'Cancelar',
+
+        // Online status
+        online: 'Online',
+
+        // TopBar Additional
+        loading: 'Carregando...',
+        loadedEquipments: 'equipamentos carregados',
+        exportPhotos: 'Exportar Fotos',
+        finishedFolders: 'Pastas finalizadas',
+        foldersInAnalysis: 'Pastas em análise',
+        analyzeBtn: 'Analisar',
+        importBtn: 'Importar',
+        emptyBtn: 'Vazias',
+        allBtn: 'Todas',
+        clearBtn: 'Limpar',
+        downloadZip: 'Baixar ZIP',
+
+        // MainView
+        analyzing: 'Analisando',
+        notAnalyzed: 'Não analisado',
+        folderContains: 'Esta pasta contém',
+        itemsLower: 'itens',
+        noObservations: 'Sem observações',
+        analystObservation: 'Observação do analista',
+        equipmentInfo: 'Informações do equipamento',
+        address: 'Endereço',
+        city: 'Cidade',
+        model: 'Modelo',
+        type: 'Tipo',
+        status: 'Status',
+        openOperations: 'Abrir no Operações',
+        analysisSummary: 'Resumo da Análise',
+        observations: 'Observações',
+        addObservations: 'Adicione observações sobre esta análise...',
+        name: 'Nome',
+        actions: 'Ações',
+        emptyFolder: 'Pasta vazia',
+        folder: 'Pasta',
+        image: 'Imagem',
+        selectedReport: 'Selecionado para Relatório',
+        markCompleted: 'Marcar como Concluído',
+        markPending: 'Marcar como Pendente',
+        deleteFolder: 'Excluir pasta',
+        removeSelection: 'Remover seleção',
+        selectImage: 'Selecionar imagem',
+        analysisComplete: 'Análise Concluída',
+        progress: 'Progresso',
+
+        completedStats: 'Concluídas',
+        pendingStats: 'Pendentes',
+
+        // Relatorios Page
+        reportsDesc: 'Visualize estatísticas e exporte seus dados',
+        analyzedFolders: 'Pastas Analisadas',
+        completionRate: 'Taxa de Conclusão',
+        selectedImages: 'Imagens Selecionadas',
+        exportData: 'Exportar Dados',
+        excelReport: 'Relatório Excel',
+        excelDesc: 'Exportar todas as análises em formato .xlsx',
+        exportBtn: 'Exportar',
+        zipArchive: 'Arquivo ZIP',
+        zipDesc: 'Baixar fotos selecionadas compactadas',
+        campaignSummary: 'Resumo da Campanha',
+        campaignStats1: 'de',
+        campaignStats2: 'abrigos foram analisados e marcados como concluídos.',
+        campaignSelected1: 'fotos foram selecionadas para o relatório final.',
+
+        // Ajuda Page
+        helpDesc: 'Guias e informações sobre o sistema',
+        quickStart: 'Início Rápido',
+        step1Title: 'Importe uma pasta',
+        step1Desc: "Clique em 'Importar' ou arraste uma pasta contendo as subpastas dos abrigos para análise.",
+        step2Title: 'Execute a análise',
+        step2Desc: "Selecione as pastas desejadas e clique em 'Analisar' para a IA identificar abrigos concluídos.",
+        step3Title: 'Exporte o relatório',
+        step3Desc: "Baixe o relatório em Excel ou exporte as fotos selecionadas em formato ZIP.",
+        shortcutsTitle: 'Atalhos de Teclado',
+        scClose: 'Fechar modal / voltar',
+        scNav: 'Navegar entre imagens',
+        scZoomIn: 'Zoom in na imagem',
+        scZoomOut: 'Zoom out na imagem',
+        scReset: 'Resetar zoom',
+        faqTitle: 'Perguntas Frequentes',
+        faq1Q: 'Quais formatos de imagem são suportados?',
+        faq1A: 'O sistema suporta imagens JPG, JPEG, PNG, WEBP e GIF.',
+        faq2Q: 'Como a IA identifica abrigos concluídos?',
+        faq2A: 'A IA analisa as imagens procurando por estruturas de abrigo completas, presença de totens instalados e elementos visuais que indicam a finalização da instalação.',
+        faq3Q: 'Posso corrigir uma análise incorreta?',
+        faq3A: 'Sim! Você pode alterar manualmente o status de qualquer pasta usando os botões verde (concluído) e laranja (pendente) na listagem de pastas.',
+        needHelp: 'Precisa de mais ajuda?',
+        contactSupport: 'Entre em contato com o suporte técnico para dúvidas ou problemas.',
+    },
+    en: {
+        // ... existing keys ...
+        // General
+        appName: 'Eletromidia Inspection AI',
+        version: 'v1.0',
+        copyright: '© 2024 Eletromidia. All rights reserved.',
+
+        // Sidebar
+        dashboard: 'Dashboard',
+        relatorios: 'Reports',
+        ferramentas: 'Tools',
+        configuracoes: 'Settings',
+        ajuda: 'Help',
+        sectionMain: 'Main',
+        sectionSystem: 'System',
+
+        // Settings Page
+        settingsTitle: 'Settings',
+        settingsSubtitle: 'Customize your system experience',
+
+        // Page Visibility Section
+        pageVisibility: 'Page Visibility',
+        relatoriosLabel: 'Reports',
+        relatoriosDesc: 'Statistics and data export',
+        configuracoesLabel: 'Settings',
+        configuracoesDesc: 'System customization',
+        ajudaLabel: 'Help',
+        ajudaDesc: 'Guides and documentation',
+        dashboardNote: 'Note: Dashboard is always visible as it is the main page.',
+
+        // AI Model Section
+        aiModel: 'AI Model',
+        geminiFlash: 'Gemini Flash',
+        geminiFlashDesc: 'High precision identification',
+        geminiFlashLite: 'Gemini Flash Lite',
+        geminiFlashLiteDesc: 'Faster processing',
+        active: 'Active',
+
+        // Appearance Section
+        appearance: 'Appearance',
+        darkMode: 'Dark Mode',
+        darkModeDesc: 'Enable dark theme to reduce eye strain',
+
+        // Language Section
+        language: 'Language',
+        languageDesc: 'Choose interface language',
+        portuguese: 'Português',
+        english: 'English',
+
+        // TopBar
+        openFolder: 'Open Folder',
+        runAI: 'Analyze with AI',
+        exportReport: 'Export Report',
+        exportZip: 'Export ZIP',
+        deleteEmpty: 'Delete Empty',
+        selectAll: 'Select All',
+        clearSelection: 'Clear Selection',
+        processing: 'Processing...',
+
+        // Status
+        completed: 'Completed',
+        pending: 'Pending',
+        unchecked: 'Unchecked',
+
+        // Reports
+        totalFolders: 'Total Folders',
+        completedFolders: 'Completed Folders',
+        pendingFolders: 'Pending Folders',
+        totalImages: 'Total Images',
+
+        // Onboarding
+        welcomeTitle: 'Welcome to the system of',
+        fiscalizacao: 'Inspection',
+        welcomeDesc: 'Configure the analysis in three simple steps and let AI automatically identify the equipment.',
+        stepModel: 'AI Model',
+        stepItems: 'Items',
+        stepFolder: 'Folder',
+        stepModelDesc: 'Choose the AI model to be used for analyzing your photos.',
+        stepItemsDesc: 'Select which equipment the AI should identify in the images.',
+        stepFolderDesc: 'Select the root folder containing the shelter subfolders for analysis.',
+        recommended: 'Recommended',
+        fast: 'Fast',
+        continue: 'Continue',
+        back: 'Back',
+        selectAtLeastOne: 'At least one item must be selected',
+        folderDragTitle: 'Click or drag folder',
+        folderDragDrop: 'Drop folder here!',
+        folderDragDesc: 'Select the "Fiscalização" folder with subfolders',
+        folderDragRelease: 'Release to load folder',
+        selectFolderBtn: 'Select Folder',
+        dragErrorEmpty: 'The folder seems to be empty.',
+        dragErrorNoFile: 'No files detected.',
+        configSummaryModel: 'Model',
+        highPrecision: 'High precision',
+        fastProcessing: 'Fast processing',
+        change: 'Change',
+        editItems: 'Edit items',
+
+        // Features
+        featureAutoDetect: 'Automatic detection of completed shelters',
+        featureSmartSelect: 'Smart selection of best photos',
+        featureReports: 'Structured Excel reports',
+        featureZip: 'Organized ZIP export',
+
+        // Items
+        item_abrigo_label: 'Shelter',
+        item_abrigo_desc: 'Complete bus shelter',
+        item_luminaria_label: 'Lights',
+        item_luminaria_desc: 'Shelter lights',
+        item_totem_estatico_label: 'Static Totem',
+        item_totem_estatico_desc: 'Static advertising totem',
+        item_totem_digital_label: 'Digital Totem',
+        item_totem_digital_desc: 'Digital advertising totem',
+        item_fundacao_label: 'Foundation',
+        item_fundacao_desc: 'Structure base/foundation',
+
+        // Upload Modal
+        confirmUploadTitle: 'Confirm Upload?',
+        confirmUploadDesc: 'You are about to analyze the folder',
+        containing: 'Containing',
+        files: 'files',
+        startAnalysis: 'Start Analysis',
+        cancel: 'Cancel',
+
+        // Online status
+        online: 'Online',
+
+        // TopBar Additional
+        loading: 'Loading...',
+        loadedEquipments: 'equipments loaded',
+        exportPhotos: 'Export Photos',
+        finishedFolders: 'Finished folders',
+        foldersInAnalysis: 'Folders in analysis',
+        analyzeBtn: 'Analyze',
+        importBtn: 'Import',
+        emptyBtn: 'Empty',
+        allBtn: 'All',
+        clearBtn: 'Clear',
+        downloadZip: 'Download ZIP',
+
+        // MainView
+        analyzing: 'Analyzing',
+        notAnalyzed: 'Not analyzed',
+        folderContains: 'This folder contains',
+        itemsLower: 'items',
+        noObservations: 'No observations',
+        analystObservation: 'Analyst observation',
+        equipmentInfo: 'Equipment Information',
+        address: 'Address',
+        city: 'City',
+        model: 'Model',
+        type: 'Type',
+        status: 'Status',
+        openOperations: 'Open in Operations',
+        analysisSummary: 'Analysis Summary',
+        observations: 'Observations',
+        addObservations: 'Add observations about this analysis...',
+        name: 'Name',
+        actions: 'Actions',
+        emptyFolder: 'Empty folder',
+        folder: 'Folder',
+        image: 'Image',
+        selectedReport: 'Selected for Report',
+        markCompleted: 'Mark as Completed',
+        markPending: 'Mark as Pending',
+        deleteFolder: 'Delete folder',
+        removeSelection: 'Remove selection',
+        selectImage: 'Select image',
+        analysisComplete: 'Analysis Complete',
+        progress: 'Progress',
+
+        completedStats: 'Completed',
+        pendingStats: 'Pending',
+
+        // Relatorios Page
+        reportsDesc: 'View statistics and export your data',
+        analyzedFolders: 'Analyzed Folders',
+        completionRate: 'Completion Rate',
+        selectedImages: 'Selected Images',
+        exportData: 'Export Data',
+        excelReport: 'Excel Report',
+        excelDesc: 'Export all analyses in .xlsx format',
+        exportBtn: 'Export',
+        zipArchive: 'ZIP Archive',
+        zipDesc: 'Download selected photos compressed',
+        campaignSummary: 'Campaign Summary',
+        campaignStats1: 'of',
+        campaignStats2: 'shelters were analyzed and marked as completed.',
+        campaignSelected1: 'photos were selected for the final report.',
+
+        // Ajuda Page
+        helpDesc: 'Guides and system information',
+        quickStart: 'Quick Start',
+        step1Title: 'Import a folder',
+        step1Desc: "Click 'Import' or drag a folder containing shelter subfolders for analysis.",
+        step2Title: 'Run analysis',
+        step2Desc: "Select desired folders and click 'Analyze' for AI to identify completed shelters.",
+        step3Title: 'Export report',
+        step3Desc: "Download Excel report or export selected photos as ZIP.",
+        shortcutsTitle: 'Keyboard Shortcuts',
+        scClose: 'Close modal / back',
+        scNav: 'Navigate between images',
+        scZoomIn: 'Zoom in',
+        scZoomOut: 'Zoom out',
+        scReset: 'Reset zoom',
+        faqTitle: 'Frequently Asked Questions',
+        faq1Q: 'Which image formats are supported?',
+        faq1A: 'System supports JPG, JPEG, PNG, WEBP and GIF.',
+        faq2Q: 'How does AI identify completed shelters?',
+        faq2A: 'AI analyzes images looking for complete shelter structures, installed totems and visual elements indicating installation completion.',
+        faq3Q: 'Can I correct an incorrect analysis?',
+        faq3A: 'Yes! You can manually change status of any folder using green (completed) and orange (pending) buttons in folder list.',
+        needHelp: 'Need more help?',
+        contactSupport: 'Contact technical support for questions or issues.',
+    }
+} as const;
+
+export type TranslationKey = keyof typeof translations.pt;

@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FolderOpen, Wand2, ArrowLeft, FileSpreadsheet, Archive, Trash2, Check, Download, Menu, X, CheckSquare, Square, Database, Loader2 } from 'lucide-react';
 import { Breadcrumb, AnalysisStatus } from '../types';
+import { TranslationKey } from '../translations';
 
 interface TopBarProps {
   currentPath: Breadcrumb[];
   onNavigateUp: () => void;
   onOpenFolder: () => void;
   onRunAI: () => void;
-  onExportReport: () => void;
+  onExportReport: (type: 'analysis') => void;
   onExportSelectedZip: (statuses: AnalysisStatus[]) => void;
   onDeleteEmptyFolders: () => void;
   onSelectAll: () => void;
@@ -18,6 +19,8 @@ interface TopBarProps {
   totalFolders: number;
   equipmentCacheReady?: boolean;
   equipmentCount?: number;
+  darkMode?: boolean;
+  t?: (key: TranslationKey) => string;
 }
 
 const TopBar: React.FC<TopBarProps> = ({
@@ -35,8 +38,14 @@ const TopBar: React.FC<TopBarProps> = ({
   selectedCount,
   totalFolders,
   equipmentCacheReady = false,
-  equipmentCount = 0
+  equipmentCount = 0,
+  darkMode = false,
+  t
 }) => {
+  const translate = (key: TranslationKey): string => {
+    if (t) return t(key);
+    return key;
+  };
   const [zipDropdownOpen, setZipDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [zipStatuses, setZipStatuses] = useState<AnalysisStatus[]>([AnalysisStatus.COMPLETED]);
@@ -60,8 +69,15 @@ const TopBar: React.FC<TopBarProps> = ({
     );
   };
 
+  // Dark mode classes
+  const bgClass = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+  const textClass = darkMode ? 'text-gray-200' : 'text-gray-700';
+  const breadcrumbBgClass = darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200';
+  const hoverClass = darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100';
+  const buttonBgClass = darkMode ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' : 'bg-white border-gray-300 hover:bg-gray-50';
+
   return (
-    <div className="bg-white border-b border-gray-200 z-10">
+    <div className={`${bgClass} border-b z-10 transition-colors duration-300`}>
       {/* Main Row */}
       <div className="flex items-center justify-between px-3 sm:px-4 lg:px-6 py-3">
 
@@ -70,13 +86,13 @@ const TopBar: React.FC<TopBarProps> = ({
           <button
             onClick={onNavigateUp}
             disabled={currentPath.length <= 1}
-            className="mr-2 sm:mr-3 p-1.5 sm:p-2 rounded-full hover:bg-gray-100 disabled:opacity-30 transition-colors flex-shrink-0"
+            className={`mr-2 sm:mr-3 p-1.5 sm:p-2 rounded-full ${hoverClass} disabled:opacity-30 transition-colors flex-shrink-0`}
           >
-            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+            <ArrowLeft className={`w-4 h-4 sm:w-5 sm:h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
           </button>
 
           {/* Breadcrumb */}
-          <div className="flex items-center text-xs sm:text-sm font-medium text-gray-700 bg-gray-50 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-gray-200 min-w-0 max-w-[120px] sm:max-w-[200px] lg:max-w-none overflow-hidden">
+          <div className={`flex items-center text-xs sm:text-sm font-medium ${textClass} ${breadcrumbBgClass} px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border min-w-0 max-w-[120px] sm:max-w-[200px] lg:max-w-none overflow-hidden`}>
             <FolderOpen className="w-3 h-3 sm:w-4 sm:h-4 text-[#FF4D00] mr-1.5 sm:mr-2 flex-shrink-0" />
             <span className="truncate">
               {currentPath.length > 1 ? currentPath[currentPath.length - 1]?.name : currentPath[0]?.name}
@@ -102,14 +118,14 @@ const TopBar: React.FC<TopBarProps> = ({
           {/* Equipment Cache Status - Desktop */}
           <div className="hidden lg:flex items-center ml-2">
             {equipmentCacheReady ? (
-              <div className="flex items-center px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md border border-emerald-200 text-xs font-medium" title={`${equipmentCount.toLocaleString()} equipamentos carregados`}>
+              <div className="flex items-center px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md border border-emerald-200 text-xs font-medium" title={`${equipmentCount.toLocaleString()} ${translate('loadedEquipments')}`}>
                 <Database className="w-3 h-3 mr-1" />
                 {equipmentCount.toLocaleString()}
               </div>
             ) : (
               <div className="flex items-center px-2 py-1 bg-gray-50 text-gray-500 rounded-md border border-gray-200 text-xs font-medium animate-pulse">
                 <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                Carregando...
+                {translate('loading')}
               </div>
             )}
           </div>
@@ -140,7 +156,7 @@ const TopBar: React.FC<TopBarProps> = ({
           >
             <Wand2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span className="ml-1.5 hidden sm:inline">
-              {isProcessing ? `${totalPending}...` : selectedCount > 0 ? `Analisar (${selectedCount})` : 'Analisar'}
+              {isProcessing ? `${totalPending}...` : selectedCount > 0 ? `${translate('analyzeBtn')} (${selectedCount})` : translate('analyzeBtn')}
             </span>
           </button>
 
@@ -162,19 +178,19 @@ const TopBar: React.FC<TopBarProps> = ({
                 <button
                   onClick={onSelectAll}
                   className="flex items-center px-2.5 py-1.5 text-xs font-medium text-purple-600 bg-white border border-purple-200 rounded-lg hover:bg-purple-50 transition-all"
-                  title="Selecionar todas"
+                  title={translate('selectAll')}
                 >
                   <CheckSquare className="w-3.5 h-3.5 mr-1.5" />
-                  Todas
+                  {translate('allBtn')}
                 </button>
                 {selectedCount > 0 && (
                   <button
                     onClick={onClearSelection}
                     className="flex items-center px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
-                    title="Limpar seleção"
+                    title={translate('clearSelection')}
                   >
                     <Square className="w-3.5 h-3.5 mr-1.5" />
-                    Limpar
+                    {translate('clearBtn')}
                   </button>
                 )}
               </>
@@ -187,21 +203,22 @@ const TopBar: React.FC<TopBarProps> = ({
               className="flex items-center px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
             >
               <FolderOpen className="w-3.5 h-3.5 mr-1.5" />
-              Importar
+              {translate('importBtn')}
             </button>
 
             <button
               onClick={onDeleteEmptyFolders}
               className="flex items-center px-2.5 py-1.5 text-xs font-medium text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-all"
-              title="Excluir vazias"
+              title={translate('deleteEmpty')}
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
 
+            {/* Excel Button - Now Single Again */}
             <button
-              onClick={onExportReport}
+              onClick={() => onExportReport('analysis')}
               className="flex items-center px-2.5 py-1.5 text-xs font-medium text-green-600 bg-white border border-green-200 rounded-lg hover:bg-green-50 transition-all"
-              title="Exportar Excel"
+              title={translate('exportReport')}
             >
               <FileSpreadsheet className="w-3.5 h-3.5" />
             </button>
@@ -212,14 +229,14 @@ const TopBar: React.FC<TopBarProps> = ({
                 onClick={() => setZipDropdownOpen(!zipDropdownOpen)}
                 className={`flex items-center px-2.5 py-1.5 text-xs font-medium border rounded-lg transition-all ${zipDropdownOpen ? 'text-[#FF4D00] bg-orange-50 border-[#FF4D00]' : 'text-blue-600 bg-white border-blue-200 hover:bg-blue-50'
                   }`}
-                title="Baixar ZIP"
+                title={translate('downloadZip')}
               >
                 <Archive className="w-3.5 h-3.5" />
               </button>
 
               {zipDropdownOpen && (
                 <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
-                  <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Exportar Fotos</div>
+                  <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">{translate('exportPhotos')}</div>
 
                   <div className="space-y-2 mb-4">
                     <label
@@ -231,8 +248,8 @@ const TopBar: React.FC<TopBarProps> = ({
                         {zipStatuses.includes(AnalysisStatus.COMPLETED) && <Check className="w-3.5 h-3.5 text-white" />}
                       </div>
                       <div>
-                        <span className="block text-sm font-medium text-gray-700">Concluídos</span>
-                        <span className="block text-[10px] text-gray-400">Pastas finalizadas</span>
+                        <span className="block text-sm font-medium text-gray-700">{translate('completed')}</span>
+                        <span className="block text-[10px] text-gray-400">{translate('finishedFolders')}</span>
                       </div>
                     </label>
 
@@ -245,8 +262,8 @@ const TopBar: React.FC<TopBarProps> = ({
                         {zipStatuses.includes(AnalysisStatus.PENDING) && <Check className="w-3.5 h-3.5 text-white" />}
                       </div>
                       <div>
-                        <span className="block text-sm font-medium text-gray-700">Pendentes</span>
-                        <span className="block text-[10px] text-gray-400">Pastas em análise</span>
+                        <span className="block text-sm font-medium text-gray-700">{translate('pending')}</span>
+                        <span className="block text-[10px] text-gray-400">{translate('foldersInAnalysis')}</span>
                       </div>
                     </label>
                   </div>
@@ -257,7 +274,7 @@ const TopBar: React.FC<TopBarProps> = ({
                     className="w-full flex items-center justify-center gap-2 bg-[#FF4D00] hover:bg-[#E64500] disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-bold py-2.5 rounded-lg transition-all shadow-lg shadow-orange-500/20"
                   >
                     <Download className="w-4 h-4" />
-                    Baixar ZIP
+                    {translate('downloadZip')}
                   </button>
                 </div>
               )}
@@ -277,7 +294,7 @@ const TopBar: React.FC<TopBarProps> = ({
                   className="flex items-center justify-center px-3 py-2 text-xs font-medium text-purple-600 bg-white border border-purple-200 rounded-lg hover:bg-purple-50"
                 >
                   <CheckSquare className="w-4 h-4 mr-1.5" />
-                  Todas
+                  {translate('allBtn')}
                 </button>
                 {selectedCount > 0 && (
                   <button
@@ -285,7 +302,7 @@ const TopBar: React.FC<TopBarProps> = ({
                     className="flex items-center justify-center px-3 py-2 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                   >
                     <Square className="w-4 h-4 mr-1.5" />
-                    Limpar
+                    {translate('clearBtn')}
                   </button>
                 )}
               </>
@@ -296,7 +313,7 @@ const TopBar: React.FC<TopBarProps> = ({
               className="flex items-center justify-center px-3 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
             >
               <FolderOpen className="w-4 h-4 mr-1.5" />
-              Importar
+              {translate('importBtn')}
             </button>
 
             <button
@@ -304,11 +321,12 @@ const TopBar: React.FC<TopBarProps> = ({
               className="flex items-center justify-center px-3 py-2 text-xs font-medium text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50"
             >
               <Trash2 className="w-4 h-4 mr-1.5" />
-              Vazias
+              {translate('emptyBtn')}
             </button>
 
+            {/* Mobile Excel Button */}
             <button
-              onClick={() => { onExportReport(); setMobileMenuOpen(false); }}
+              onClick={() => { onExportReport('analysis'); setMobileMenuOpen(false); }}
               className="flex items-center justify-center px-3 py-2 text-xs font-medium text-green-600 bg-white border border-green-200 rounded-lg hover:bg-green-50"
             >
               <FileSpreadsheet className="w-4 h-4 mr-1.5" />

@@ -23,15 +23,51 @@
   <link href="https://fonts.googleapis.com/css2?family=Rethink+Sans:ital,wght@0,400..800;1,400..800&display=swap"
     rel="stylesheet">
   <style>
+    :root {
+      --bg-primary: #F3F4F6;
+      --bg-secondary: #FFFFFF;
+      --bg-tertiary: #F8F9FA;
+      --bg-hover: #F3F4F6;
+      --text-primary: #111827;
+      --text-secondary: #6B7280;
+      --text-muted: #9CA3AF;
+      --border-color: #E5E7EB;
+      --border-light: #F3F4F6;
+      --scrollbar-track: transparent;
+      --scrollbar-thumb: #D1D5DB;
+      --scrollbar-thumb-hover: #9CA3AF;
+      --sidebar-bg: #1F2937;
+      --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    html.dark {
+      --bg-primary: #111827;
+      --bg-secondary: #1F2937;
+      --bg-tertiary: #374151;
+      --bg-hover: #374151;
+      --text-primary: #F9FAFB;
+      --text-secondary: #D1D5DB;
+      --text-muted: #9CA3AF;
+      --border-color: #374151;
+      --border-light: #4B5563;
+      --scrollbar-track: #1F2937;
+      --scrollbar-thumb: #4B5563;
+      --scrollbar-thumb-hover: #6B7280;
+      --sidebar-bg: #0F172A;
+      --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+
     html {
       scroll-behavior: smooth;
     }
 
     body {
       font-family: 'Rethink Sans', sans-serif;
-      background-color: #F3F4F6;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
       min-height: 100vh;
       overflow-x: hidden;
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
     #root {
@@ -45,16 +81,16 @@
     }
 
     ::-webkit-scrollbar-track {
-      background: transparent;
+      background: var(--scrollbar-track);
     }
 
     ::-webkit-scrollbar-thumb {
-      background: #D1D5DB;
+      background: var(--scrollbar-thumb);
       border-radius: 4px;
     }
 
     ::-webkit-scrollbar-thumb:hover {
-      background: #9CA3AF;
+      background: var(--scrollbar-thumb-hover);
     }
 
     .brand-orange {
@@ -67,6 +103,31 @@
 
     .border-brand-orange {
       border-color: #FF4D00;
+    }
+
+    /* Dark mode utility classes */
+    .dark-bg-primary {
+      background-color: var(--bg-primary);
+    }
+
+    .dark-bg-secondary {
+      background-color: var(--bg-secondary);
+    }
+
+    .dark-bg-tertiary {
+      background-color: var(--bg-tertiary);
+    }
+
+    .dark-text-primary {
+      color: var(--text-primary);
+    }
+
+    .dark-text-secondary {
+      color: var(--text-secondary);
+    }
+
+    .dark-border {
+      border-color: var(--border-color);
     }
 
     /* Hide caret by default */

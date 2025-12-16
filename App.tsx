@@ -8,12 +8,17 @@ import TopBar from './components/TopBar';
 import MainView from './components/MainView';
 import AnalysisProgressPanel from './components/AnalysisProgressPanel';
 import RelatoriosPage from './components/pages/RelatoriosPage';
+import FerramentasPage from './components/pages/FerramentasPage';
 import ConfiguracoesPage, { PageVisibility } from './components/pages/ConfiguracoesPage';
 import AjudaPage from './components/pages/AjudaPage';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
+import { useSettings } from './hooks/useSettings';
 
 const App: React.FC = () => {
+  // Settings (dark mode and language)
+  const { language, setLanguage, darkMode, setDarkMode, t } = useSettings();
+
   // Onboarding state
   const [hasData, setHasData] = useState(false);
   const [selectedModel, setSelectedModel] = useState<GeminiModel>('gemini-flash-latest');
@@ -282,6 +287,9 @@ const App: React.FC = () => {
 
     if (foldersToAnalyze.length === 0) return;
 
+    // Sort folders naturally (alphanumeric) to match UI order
+    foldersToAnalyze.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
     setIsProcessing(true);
     setShowProgressPanel(true);
     setProcessedCount(0);
@@ -444,19 +452,16 @@ const App: React.FC = () => {
   };
 
   // Export to Excel
-  const handleExportReport = async () => {
+  const handleExportReport = async (type: 'analysis' | 'simple' | 'glass' = 'analysis') => {
     if (!rootFolder) return;
 
     const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('Análise');
+    let sheetName = 'Relatório';
+    if (type === 'analysis') sheetName = 'Análise de Imagens';
+    if (type === 'simple') sheetName = 'Lista de Pastas';
+    if (type === 'glass') sheetName = 'Troca de Vidros';
 
-    sheet.columns = [
-      { header: 'N° Parada', key: 'code', width: 15 },
-      { header: 'Endereço', key: 'address', width: 40 },
-      { header: 'N°', key: 'number', width: 10 },
-      { header: 'Status', key: 'status', width: 20 },
-      { header: 'Resumo', key: 'summary', width: 80 }
-    ];
+    const sheet = workbook.addWorksheet(sheetName);
 
     // Styling constants
     const headerFont = { name: 'Rethink Sans', family: 4, size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -472,6 +477,41 @@ const App: React.FC = () => {
     const centerAlign: Partial<ExcelJS.Alignment> = { vertical: 'middle', horizontal: 'center' };
     const leftAlign: Partial<ExcelJS.Alignment> = { vertical: 'middle', horizontal: 'left', wrapText: true };
 
+    // Define Columns based on type
+    if (type === 'analysis') {
+      sheet.columns = [
+        { header: 'N° Eletro', key: 'neletro', width: 15 },
+        { header: 'N° Parada', key: 'code', width: 15 },
+        { header: 'Endereço', key: 'address', width: 40 },
+        { header: 'N°', key: 'number', width: 10 },
+        { header: 'Status', key: 'status', width: 20 },
+        { header: 'Resumo', key: 'summary', width: 80 }
+      ];
+    } else if (type === 'simple') {
+      sheet.columns = [
+        { header: 'N° Eletro', key: 'neletro', width: 15 },
+        { header: 'N° Parada', key: 'code', width: 15 },
+        { header: 'Endereço', key: 'address', width: 40 },
+        { header: 'N°', key: 'number', width: 10 },
+        { header: 'Bairro', key: 'neighborhood', width: 20 },
+        { header: 'Cidade', key: 'city', width: 20 }
+      ];
+    } else if (type === 'glass') {
+      // Columns based on standard maintenance needs + placeholder for user verification
+      sheet.columns = [
+        { header: 'N° Eletro', key: 'neletro', width: 12 },
+        { header: 'N° Parada', key: 'code', width: 12 },
+        { header: 'Endereço', key: 'address', width: 40 },
+        { header: 'N°', key: 'number', width: 8 },
+        { header: 'Bairro', key: 'neighborhood', width: 20 },
+        { header: 'Modelo', key: 'model', width: 25 }, // Modelo de Abrigo
+        { header: 'Tipo', key: 'type', width: 20 }, // Tipo de Equipamento
+        { header: 'Qtd. Vidros', key: 'glass_qty', width: 15 }, // Placeholder
+        { header: 'Medidas', key: 'dimensions', width: 20 }, // Placeholder
+        { header: 'Observações', key: 'observations', width: 40 }
+      ];
+    }
+
     // Apply header styles
     const headerRow = sheet.getRow(1);
     headerRow.font = headerFont;
@@ -484,20 +524,38 @@ const App: React.FC = () => {
     });
 
     const addRows = (folder: FolderItem) => {
-      if (folder.status !== AnalysisStatus.UNCHECKED) {
+      // Logic for including rows:
+      // Analysis: Only if status is NOT UNCHECKED (processed folders)
+      // Simple/Glass: All folders
+      const shouldInclude = type === 'analysis' ? folder.status !== AnalysisStatus.UNCHECKED : true;
+
+      if (shouldInclude) {
         // Parse folder name
         const match = folder.name.match(/^(\d+)\s+(.*?)(?:\s+(\d+))?$/);
-        const code = match ? match[1] : '';
-        const address = match ? match[2] : folder.name;
-        const number = match ? match[3] || '' : '';
+        const codeFromName = match ? match[1] : '';
+        const addressFromName = match ? match[2] : folder.name;
+        const numberFromName = match ? match[3] || '' : '';
 
-        const row = sheet.addRow({
-          code: code,
-          address: address,
-          number: number,
+        // Use equipment info if available, otherwise fallback to parsed name
+        const eq = folder.equipmentInfo;
+
+        const rowData: any = {
+          neletro: eq?.nEletro || '',
+          code: eq?.nParada || codeFromName,
+          address: eq?.endereco || addressFromName,
+          number: numberFromName, // Equipment info usually puts number in address, keeping parsed for now
+          neighborhood: eq?.bairro || '',
+          city: eq?.cidade || '',
           status: folder.status === AnalysisStatus.COMPLETED ? 'Concluído' : 'Pendente',
-          summary: folder.analysisSummary || ''
-        });
+          summary: folder.analysisSummary || '',
+          model: eq?.modeloAbrigo || '',
+          type: eq?.tipoEquipamento || '',
+          glass_qty: '', // Placeholder
+          dimensions: '', // Placeholder
+          observations: folder.observation || ''
+        };
+
+        const row = sheet.addRow(rowData);
 
         // Apply styles to the new row
         const isEven = row.number % 2 === 0;
@@ -505,6 +563,9 @@ const App: React.FC = () => {
 
         // Common cell style application
         const applyStyle = (cellKey: string, align: Partial<ExcelJS.Alignment> = centerAlign) => {
+          // Only apply if column exists
+          if (!sheet.getColumn(cellKey)) return;
+
           const cell = row.getCell(cellKey);
           cell.font = cellFont;
           cell.alignment = align;
@@ -513,20 +574,39 @@ const App: React.FC = () => {
           return cell;
         };
 
-        applyStyle('code');
-        applyStyle('address', leftAlign);
-        applyStyle('number');
-
-        // Status Cell
-        const statusCell = applyStyle('status');
-        statusCell.font = {
-          ...cellFont,
-          bold: true,
-          color: { argb: folder.status === AnalysisStatus.COMPLETED ? 'FF16A34A' : 'FFEA580C' }
-        };
-
-        // Summary Cell
-        applyStyle('summary', leftAlign);
+        if (type === 'analysis') {
+          applyStyle('neletro');
+          applyStyle('code');
+          applyStyle('address', leftAlign);
+          applyStyle('number');
+          const statusCell = applyStyle('status');
+          if (statusCell) {
+            statusCell.font = {
+              ...cellFont,
+              bold: true,
+              color: { argb: folder.status === AnalysisStatus.COMPLETED ? 'FF16A34A' : 'FFEA580C' }
+            };
+          }
+          applyStyle('summary', leftAlign);
+        } else if (type === 'simple') {
+          applyStyle('neletro');
+          applyStyle('code');
+          applyStyle('address', leftAlign);
+          applyStyle('number');
+          applyStyle('neighborhood');
+          applyStyle('city');
+        } else if (type === 'glass') {
+          applyStyle('neletro');
+          applyStyle('code');
+          applyStyle('address', leftAlign);
+          applyStyle('number');
+          applyStyle('neighborhood');
+          applyStyle('model');
+          applyStyle('type');
+          applyStyle('glass_qty');
+          applyStyle('dimensions');
+          applyStyle('observations', leftAlign);
+        }
       }
 
       folder.children.forEach(child => {
@@ -543,7 +623,13 @@ const App: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `relatorio_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+    // File name based on type
+    let fileName = `relatorio_${new Date().toISOString().split('T')[0]}`;
+    if (type === 'simple') fileName = `pastas_${new Date().toISOString().split('T')[0]}`;
+    if (type === 'glass') fileName = `troca_vidros_${new Date().toISOString().split('T')[0]}`;
+
+    a.download = `${fileName}.xlsx`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -646,28 +732,42 @@ const App: React.FC = () => {
         selectedModel={selectedModel}
         selectedItems={selectedVerificationItems}
         fileInputRef={fileInputRef}
+        darkMode={darkMode}
+        onDarkModeChange={setDarkMode}
+        language={language}
+        onLanguageChange={setLanguage}
+        t={t}
       />
     );
   }
 
   // Render main app with sidebar navigation
   return (
-    <div className="h-screen flex font-['Rethink_Sans']">
+    <div className={`h-screen flex font-['Rethink_Sans'] transition-colors duration-300 ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
       <Sidebar
         activePage={activePage}
         onPageChange={setActivePage}
         pageVisibility={pageVisibility}
         isCollapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        darkMode={darkMode}
+        t={t}
       />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className={`flex-1 flex flex-col overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-gray-900' : 'bg-[#F8F9FA]'}`}>
         {activePage === 'dashboard' && (
           <>
             <TopBar
               currentPath={currentPath}
               onNavigateUp={handleNavigateUp}
-              onOpenFolder={() => fileInputRef.current?.click()}
+              onOpenFolder={() => {
+                if (fileInputRef.current) {
+                  fileInputRef.current.click();
+                } else {
+                  // Fallback in case ref is lost
+                  (document.getElementById('folder-select-input') as HTMLInputElement)?.click();
+                }
+              }}
               onRunAI={handleRunAI}
               onExportReport={handleExportReport}
               onExportSelectedZip={handleExportZip}
@@ -680,6 +780,8 @@ const App: React.FC = () => {
               totalFolders={stats.totalFolders}
               equipmentCacheReady={!isEnrichingEquipment}
               equipmentCount={getEquipmentCount()}
+              darkMode={darkMode}
+              t={t}
             />
             <MainView
               items={currentItems}
@@ -696,6 +798,8 @@ const App: React.FC = () => {
               currentFolderPath={currentFolderInfo.path}
               currentFolderEquipmentInfo={currentFolderInfo.equipmentInfo}
               currentFolderEnrichedAddress={currentFolderInfo.enrichedAddress}
+              darkMode={darkMode}
+              t={t}
             />
           </>
         )}
@@ -705,6 +809,16 @@ const App: React.FC = () => {
             onExportReport={handleExportReport}
             onExportZip={() => handleExportZip([AnalysisStatus.COMPLETED])}
             stats={stats}
+            darkMode={darkMode}
+            t={t}
+          />
+        )}
+
+        {activePage === 'ferramentas' && (
+          <FerramentasPage
+            onExportReport={handleExportReport}
+            darkMode={darkMode}
+            t={t}
           />
         )}
 
@@ -714,21 +828,31 @@ const App: React.FC = () => {
             onTogglePageVisibility={handleTogglePageVisibility}
             selectedModel={selectedModel}
             onModelChange={handleModelChange}
+            darkMode={darkMode}
+            onDarkModeChange={setDarkMode}
+            language={language}
+            onLanguageChange={setLanguage}
+            t={t}
           />
         )}
 
-        {activePage === 'ajuda' && <AjudaPage />}
+        {activePage === 'ajuda' && <AjudaPage darkMode={darkMode} t={t} />}
       </div>
 
       {/* Hidden file input */}
+      {/* Hidden file input */}
       <input
+        id="folder-select-input"
         type="file"
         ref={fileInputRef}
         // @ts-ignore
         webkitdirectory=""
         multiple
         className="hidden"
-        onChange={handleFolderSelect}
+        onChange={(e) => {
+          handleFolderSelect(e);
+          e.target.value = ''; // Reset to allow selecting same folder
+        }}
       />
 
       {/* Progress Panel */}
@@ -743,6 +867,7 @@ const App: React.FC = () => {
         onClose={() => setShowProgressPanel(false)}
         onToggle={() => setProgressMinimized(!progressMinimized)}
         isMinimized={progressMinimized}
+        t={t}
       />
     </div>
   );

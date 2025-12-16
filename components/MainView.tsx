@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Folder, Image as ImageIcon, CheckCircle2, AlertCircle, Clock, File, Trash2, Square, CheckSquare, ExternalLink, MapPin, Building2 } from 'lucide-react';
 import { FolderItem, FileItem, ItemType, AnalysisStatus, EquipmentInfo } from '../types';
+import { TranslationKey } from '../translations';
 import ImageLightbox from './ImageLightbox';
 
 interface MainViewProps {
@@ -18,15 +19,29 @@ interface MainViewProps {
   currentFolderPath?: string;
   currentFolderEquipmentInfo?: EquipmentInfo;
   currentFolderEnrichedAddress?: string;
+  darkMode?: boolean;
+  t?: (key: TranslationKey) => string;
 }
 
-const StatusBadge = ({ status }: { status: AnalysisStatus }) => {
+const StatusBadge = ({ status, t }: { status: AnalysisStatus, t?: (key: TranslationKey) => string }) => {
+  const translate = (key: TranslationKey): string => {
+    if (t) return t(key);
+    // Fallbacks
+    switch (key) {
+      case 'completed': return 'Concluído';
+      case 'pending': return 'Pendente';
+      case 'analyzing': return 'Analisando';
+      case 'notAnalyzed': return 'Não analisado';
+      default: return key;
+    }
+  };
+
   switch (status) {
     case AnalysisStatus.COMPLETED:
       return (
         <div className="inline-flex items-center text-green-600 text-[10px] sm:text-xs font-medium bg-green-50 px-1.5 sm:px-2 py-0.5 rounded-full border border-green-100">
           <CheckCircle2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
-          <span className="hidden sm:inline">Concluído</span>
+          <span className="hidden sm:inline">{translate('completed')}</span>
           <span className="sm:hidden">OK</span>
         </div>
       );
@@ -34,7 +49,7 @@ const StatusBadge = ({ status }: { status: AnalysisStatus }) => {
       return (
         <div className="inline-flex items-center text-amber-600 text-[10px] sm:text-xs font-medium bg-amber-50 px-1.5 sm:px-2 py-0.5 rounded-full border border-amber-100">
           <AlertCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
-          <span className="hidden sm:inline">Pendente</span>
+          <span className="hidden sm:inline">{translate('pending')}</span>
           <span className="sm:hidden">!</span>
         </div>
       );
@@ -42,14 +57,14 @@ const StatusBadge = ({ status }: { status: AnalysisStatus }) => {
       return (
         <div className="inline-flex items-center text-blue-600 text-[10px] sm:text-xs font-medium bg-blue-50 px-1.5 sm:px-2 py-0.5 rounded-full border border-blue-100">
           <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1 animate-spin" />
-          <span className="hidden sm:inline">Analisando</span>
+          <span className="hidden sm:inline">{translate('analyzing')}</span>
           <span className="sm:hidden">...</span>
         </div>
       );
     default:
       return (
         <div className="inline-flex items-center text-gray-400 text-[10px] sm:text-xs font-medium bg-gray-50 px-1.5 sm:px-2 py-0.5 rounded-full border border-gray-100">
-          <span className="hidden sm:inline">Não analisado</span>
+          <span className="hidden sm:inline">{translate('notAnalyzed')}</span>
           <span className="sm:hidden">-</span>
         </div>
       );
@@ -70,8 +85,13 @@ const MainView: React.FC<MainViewProps> = ({
   currentFolderPath,
   onUpdateObservation,
   currentFolderEquipmentInfo,
-  currentFolderEnrichedAddress
+  currentFolderEnrichedAddress,
+  t
 }) => {
+  const translate = (key: TranslationKey): string => {
+    if (t) return t(key);
+    return key;
+  };
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
@@ -134,7 +154,7 @@ const MainView: React.FC<MainViewProps> = ({
                 <Building2 className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-gray-800 text-xs sm:text-sm">Informações do Equipamento</h3>
+                <h3 className="font-semibold text-gray-800 text-xs sm:text-sm">{translate('equipmentInfo')}</h3>
                 {currentFolderEnrichedAddress && (
                   <div className="flex items-center gap-1 text-xs sm:text-sm text-blue-700 mt-1">
                     <MapPin className="w-3 h-3 flex-shrink-0" />
@@ -144,7 +164,7 @@ const MainView: React.FC<MainViewProps> = ({
                 <div className="flex flex-wrap gap-2 mt-2">
                   {currentFolderEquipmentInfo.modeloAbrigo && currentFolderEquipmentInfo.modeloAbrigo !== '-' && (
                     <span className="text-[10px] sm:text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
-                      Modelo: {currentFolderEquipmentInfo.modeloAbrigo}
+                      {translate('model')}: {currentFolderEquipmentInfo.modeloAbrigo}
                     </span>
                   )}
                   {currentFolderEquipmentInfo.nEletro && (
@@ -167,7 +187,7 @@ const MainView: React.FC<MainViewProps> = ({
                 className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-[#FF4D00] hover:bg-[#E64500] text-white text-xs sm:text-sm font-semibold rounded-lg shadow-md transition-all"
               >
                 <ExternalLink className="w-4 h-4" />
-                <span className="hidden sm:inline">Abrir no Operações</span>
+                <span className="hidden sm:inline">{translate('openOperations')}</span>
                 <span className="sm:hidden">Operações</span>
               </button>
             )}
@@ -186,7 +206,7 @@ const MainView: React.FC<MainViewProps> = ({
             {currentFolderStatus === AnalysisStatus.COMPLETED ? <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />}
           </div>
           <div className="min-w-0">
-            <h3 className="font-semibold text-gray-800 text-xs sm:text-sm">Resumo da Análise</h3>
+            <h3 className="font-semibold text-gray-800 text-xs sm:text-sm">{translate('analysisSummary')}</h3>
             <p className="text-gray-600 text-xs sm:text-sm mt-0.5 sm:mt-1 break-words">{currentFolderReason}</p>
           </div>
         </div>
@@ -195,11 +215,11 @@ const MainView: React.FC<MainViewProps> = ({
       {/* Observation Field */}
       {currentFolderPath && (
         <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-xl border border-gray-200 bg-white shadow-sm">
-          <h3 className="font-semibold text-gray-800 text-xs sm:text-sm mb-2">Observações</h3>
+          <h3 className="font-semibold text-gray-800 text-xs sm:text-sm mb-2">{translate('observations')}</h3>
           <textarea
             className="w-full text-xs sm:text-sm p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
             rows={3}
-            placeholder="Adicione observações sobre esta análise..."
+            placeholder={translate('addObservations')}
             value={currentFolderObservation || ''}
             onChange={(e) => onUpdateObservation?.(currentFolderPath, e.target.value)}
           />
@@ -209,15 +229,15 @@ const MainView: React.FC<MainViewProps> = ({
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {/* Header - Hidden on small screens, shown as card layout instead */}
         <div className="hidden lg:grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50/80 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          <div className="col-span-5">Nome</div>
-          <div className="col-span-3">Status</div>
-          <div className="col-span-2 text-right">Tipo</div>
-          <div className="col-span-2 text-right">Ações</div>
+          <div className="col-span-5">{translate('name')}</div>
+          <div className="col-span-3">{translate('status')}</div>
+          <div className="col-span-2 text-right">{translate('type')}</div>
+          <div className="col-span-2 text-right">{translate('actions')}</div>
         </div>
 
         {/* Mobile Header */}
         <div className="sm:hidden px-4 py-2 bg-gray-50/80 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          Itens
+          {translate('stepItems')}
         </div>
 
         {/* Content */}
@@ -225,7 +245,7 @@ const MainView: React.FC<MainViewProps> = ({
           {sortedItems.length === 0 && (
             <div className="p-6 sm:p-8 text-center text-gray-400">
               <Folder className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 opacity-20" />
-              <p className="text-sm sm:text-base">Pasta vazia</p>
+              <p className="text-sm sm:text-base">{translate('emptyFolder')}</p>
             </div>
           )}
 
@@ -284,7 +304,7 @@ const MainView: React.FC<MainViewProps> = ({
                         <span className={`text-sm sm:text-base font-medium truncate ${isSelected ? 'text-green-800' : 'text-gray-700'}`}>
                           {item.name}
                         </span>
-                        {isFolder && <StatusBadge status={(item as FolderItem).status} />}
+                        {isFolder && <StatusBadge status={(item as FolderItem).status} t={t} />}
                       </div>
                       {/* Equipment enriched address */}
                       {isFolder && folderItem.enrichedAddress && (
@@ -294,11 +314,11 @@ const MainView: React.FC<MainViewProps> = ({
                         </div>
                       )}
                       <div className="flex items-center gap-2 text-[10px] sm:text-xs text-gray-500">
-                        <span>{isFolder ? 'Pasta' : 'Imagem'}</span>
+                        <span>{isFolder ? translate('folder') : translate('image')}</span>
                         {isFolder && folderItem.equipmentInfo?.modeloAbrigo && folderItem.equipmentInfo.modeloAbrigo !== '-' && (
                           <span className="text-purple-600">• {folderItem.equipmentInfo.modeloAbrigo}</span>
                         )}
-                        {isSelected && <span className="text-green-600 font-semibold">• Selecionado</span>}
+                        {isSelected && <span className="text-green-600 font-semibold">• {translate('selectedReport')}</span>}
                       </div>
                     </div>
 
@@ -312,7 +332,7 @@ const MainView: React.FC<MainViewProps> = ({
                             window.open(folderItem.equipmentInfo!.linkOperacoes, '_blank');
                           }}
                           className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Abrir no Operações"
+                          title={translate('openOperations')}
                         >
                           <ExternalLink className="w-4 h-4" />
                         </button>
@@ -347,7 +367,7 @@ const MainView: React.FC<MainViewProps> = ({
                         <button
                           onClick={(e) => handleDelete(e, (item as FolderItem).path)}
                           className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
-                          title="Excluir pasta"
+                          title={translate('deleteFolder')}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -392,20 +412,20 @@ const MainView: React.FC<MainViewProps> = ({
                         </div>
                       )}
                       {isFolder && folderItem.equipmentInfo?.modeloAbrigo && folderItem.equipmentInfo.modeloAbrigo !== '-' && (
-                        <span className="text-[10px] text-purple-600 font-medium">Modelo: {folderItem.equipmentInfo.modeloAbrigo}</span>
+                        <span className="text-[10px] text-purple-600 font-medium">{translate('model')}: {folderItem.equipmentInfo.modeloAbrigo}</span>
                       )}
-                      {isSelected && <span className="text-[10px] text-green-600 font-semibold uppercase tracking-wide">Selecionado para Relatório</span>}
+                      {isSelected && <span className="text-[10px] text-green-600 font-semibold uppercase tracking-wide">{translate('selectedReport')}</span>}
                     </div>
                   </div>
 
                   {/* Status */}
                   <div className="col-span-3">
-                    {isFolder && <StatusBadge status={(item as FolderItem).status} />}
+                    {isFolder && <StatusBadge status={(item as FolderItem).status} t={t} />}
                   </div>
 
                   {/* Type/Meta */}
                   <div className="col-span-2 text-right text-gray-400 text-xs">
-                    {isFolder ? 'Pasta' : 'Imagem'}
+                    {isFolder ? translate('folder') : translate('image')}
                   </div>
 
                   {/* Actions */}
@@ -419,7 +439,7 @@ const MainView: React.FC<MainViewProps> = ({
                           window.open(folderItem.equipmentInfo!.linkOperacoes, '_blank');
                         }}
                         className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Abrir no Operações"
+                        title={translate('openOperations')}
                       >
                         <ExternalLink className="w-4 h-4" />
                       </button>
@@ -431,14 +451,14 @@ const MainView: React.FC<MainViewProps> = ({
                         <button
                           onClick={(e) => handleManualStatus(e, (item as FolderItem).path, AnalysisStatus.COMPLETED)}
                           className="p-1.5 text-green-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                          title="Marcar como Concluído"
+                          title={translate('markCompleted')}
                         >
                           <CheckCircle2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={(e) => handleManualStatus(e, (item as FolderItem).path, AnalysisStatus.PENDING)}
                           className="p-1.5 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                          title="Marcar como Pendente"
+                          title={translate('markPending')}
                         >
                           <AlertCircle className="w-4 h-4" />
                         </button>
@@ -448,7 +468,7 @@ const MainView: React.FC<MainViewProps> = ({
                     {isImage && onToggleImageSelection && (
                       <button
                         onClick={(e) => handleImageSelectToggle(e, (item as FileItem).path)}
-                        title={isSelected ? "Remover seleção" : "Selecionar imagem"}
+                        title={isSelected ? translate('removeSelection') : translate('selectImage')}
                         className={`p-1.5 rounded-lg transition-colors ${isSelected ? 'text-green-500 bg-green-50 hover:bg-green-100' : 'text-gray-300 hover:text-gray-500 hover:bg-gray-50'}`}
                       >
                         {isSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
@@ -459,7 +479,7 @@ const MainView: React.FC<MainViewProps> = ({
                       <button
                         onClick={(e) => handleDelete(e, (item as FolderItem).path)}
                         className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Excluir pasta"
+                        title={translate('deleteFolder')}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
