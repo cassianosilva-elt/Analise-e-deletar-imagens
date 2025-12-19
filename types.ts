@@ -18,7 +18,7 @@ export interface Breadcrumb {
 
 export interface EquipmentInfo {
     nEletro?: string;
-    nParada?: string;
+    nParada?: number;
     endereco?: string;
     bairro?: string;
     cidade?: string;
@@ -28,6 +28,11 @@ export interface EquipmentInfo {
     painelDigital?: string;
     painelEstatico?: string;
     ponto?: string;
+    linkOperacoes?: string;
+    latitude?: number;
+    longitude?: number;
+    areaTrabalho?: string;
+    status?: string;
 }
 
 export interface FolderItem {
@@ -52,14 +57,15 @@ export interface FileItem {
     selectedByAI?: boolean;
 }
 
-export type VerificationItemType = 'abrigo' | 'luminaria' | 'totem_estatico' | 'totem_digital' | 'fundacao';
+export type VerificationItemType = 'abrigo' | 'luminaria' | 'totem_estatico' | 'totem_digital' | 'fundacao' | 'eletrica';
 
 export const VERIFICATION_ITEMS: { id: VerificationItemType; label: string }[] = [
     { id: 'abrigo', label: 'Abrigo de Ônibus' },
     { id: 'luminaria', label: 'Luminária' },
     { id: 'totem_estatico', label: 'Totem Estático' },
     { id: 'totem_digital', label: 'Totem Digital' },
-    { id: 'fundacao', label: 'Fundação' }
+    { id: 'fundacao', label: 'Fundação' },
+    { id: 'eletrica', label: 'Elétrica (Alta/Baixa)' }
 ];
 
 export interface AIAnalysisResult {
@@ -68,4 +74,11 @@ export interface AIAnalysisResult {
     selectedFiles: string[];
     reason: string;
     observation?: string;
+}
+
+export interface ChatMessage {
+    id: string;
+    role: 'user' | 'model';
+    text: string;
+    timestamp: number;
 }

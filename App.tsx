@@ -14,10 +14,25 @@ import AjudaPage from './components/pages/AjudaPage';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import { useSettings } from './hooks/useSettings';
+import { naturalCompare } from './utils/sorting';
+import ChatDialog from './components/ChatDialog';
 
 const App: React.FC = () => {
   // Settings (dark mode and language)
   const { language, setLanguage, darkMode, setDarkMode, t } = useSettings();
+
+  // Navigation to start (reset)
+  const handleNavigateToStart = useCallback(() => {
+    setHasData(false);
+    setRootFolder(null);
+    setCurrentPath([]);
+    setSelectedFolders(new Set());
+    setActivePage('dashboard');
+    // Also clear processing states
+    setIsProcessing(false);
+    setShowProgressPanel(false);
+  }, []);
+
 
   // Onboarding state
   const [hasData, setHasData] = useState(false);
@@ -154,6 +169,8 @@ const App: React.FC = () => {
     };
 
     const allFolders = collectFolders(root);
+    // Sort folders naturally to ensure predictable enrichment order
+    allFolders.sort((a, b) => naturalCompare(a.name, b.name));
     console.log(`[Equipment] Enriching ${allFolders.length} folders...`);
 
     // Enrich each folder (sequentially to avoid overwhelming API)
@@ -257,13 +274,33 @@ const App: React.FC = () => {
   };
 
   // Update folder status in tree
-  const updateFolderStatus = useCallback((folderPath: string, status: AnalysisStatus, summary?: string, observation?: string) => {
+  const updateFolderStatus = useCallback((folderPath: string, status: AnalysisStatus, summary?: string, observation?: string, selectedFiles?: string[]) => {
     setRootFolder(currentRoot => {
       if (!currentRoot) return null;
 
       const updateRecursive = (folder: FolderItem): FolderItem => {
         if (folder.path === folderPath) {
-          return { ...folder, status, analysisSummary: summary, observation: observation || folder.observation };
+          // If selectedFiles provided, update children
+          let updatedChildren = folder.children;
+          if (selectedFiles) {
+            updatedChildren = folder.children.map(child => {
+              if (child.type === ItemType.IMAGE) {
+                return {
+                  ...child,
+                  selectedByAI: selectedFiles.includes(child.name)
+                };
+              }
+              return child;
+            });
+          }
+
+          return {
+            ...folder,
+            status,
+            analysisSummary: summary,
+            observation: observation || folder.observation,
+            children: updatedChildren
+          };
         }
         return {
           ...folder,
@@ -288,7 +325,7 @@ const App: React.FC = () => {
     if (foldersToAnalyze.length === 0) return;
 
     // Sort folders naturally (alphanumeric) to match UI order
-    foldersToAnalyze.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+    foldersToAnalyze.sort((a, b) => naturalCompare(a, b));
 
     setIsProcessing(true);
     setShowProgressPanel(true);
@@ -317,6 +354,7 @@ const App: React.FC = () => {
           .map(c => (c as FileItem).fileObject!);
 
         try {
+          console.log(`[AI] Iniciando análise sequencial da pasta: ${targetFolder.name}`);
           // Pass equipment info to AI for better context
           const result = await analyzeFolderImages(
             targetFolder.name,
@@ -326,7 +364,7 @@ const App: React.FC = () => {
             targetFolder.equipmentInfo
           );
           const newStatus = result.status === 'COMPLETED' ? AnalysisStatus.COMPLETED : AnalysisStatus.PENDING;
-          updateFolderStatus(folderPath, newStatus, result.reason, result.observation);
+          updateFolderStatus(folderPath, newStatus, result.reason, result.observation, result.selectedFiles);
         } catch (error) {
           updateFolderStatus(folderPath, AnalysisStatus.PENDING, 'Erro na análise');
         }
@@ -722,6 +760,24 @@ const App: React.FC = () => {
     };
   }, [rootFolder, currentPath]);
 
+  // Chat context
+  const chatContext = useMemo(() => {
+    if (!currentFolderInfo || !currentFolderInfo.path) return '';
+
+    let context = `Pasta Atual: ${currentFolderInfo.path}\n`;
+    context += `Status: ${currentFolderInfo.status || 'N/A'}\n`;
+    if (currentFolderInfo.reason) context += `Resumo da Análise: ${currentFolderInfo.reason}\n`;
+    if (currentFolderInfo.observation) context += `Observação: ${currentFolderInfo.observation}\n`;
+
+    if (currentFolderInfo.equipmentInfo) {
+      context += `\nEquipamento:\n`;
+      context += `Modelo: ${currentFolderInfo.equipmentInfo.modeloAbrigo || 'N/A'}\n`;
+      context += `Endereço: ${currentFolderInfo.equipmentInfo.endereco || 'N/A'}\n`;
+    }
+
+    return context;
+  }, [currentFolderInfo]);
+
   // Render onboarding if no data
   if (!hasData) {
     return (
@@ -750,6 +806,7 @@ const App: React.FC = () => {
         pageVisibility={pageVisibility}
         isCollapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        onNavigateToStart={handleNavigateToStart}
         darkMode={darkMode}
         t={t}
       />
@@ -869,6 +926,8 @@ const App: React.FC = () => {
         isMinimized={progressMinimized}
         t={t}
       />
+
+      <ChatDialog context={chatContext} />
     </div>
   );
 };

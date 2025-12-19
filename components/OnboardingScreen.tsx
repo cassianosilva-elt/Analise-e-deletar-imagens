@@ -230,12 +230,12 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
+        const filesArray = Array.from(files);
         // Reset value to allow re-selection
         e.target.value = '';
 
-        const firstFilePath = files[0].webkitRelativePath;
+        const firstFilePath = filesArray[0].webkitRelativePath;
         const folderName = firstFilePath.split('/')[0] || 'Pasta selecionada';
-        const filesArray = Array.from(files);
         setPendingFiles(filesArray);
         setPendingFolderName(folderName);
         setShowUploadConfirm(true);

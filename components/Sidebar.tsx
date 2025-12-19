@@ -11,6 +11,7 @@ interface SidebarProps {
   pageVisibility: PageVisibility;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  onNavigateToStart?: () => void;
   darkMode?: boolean;
   t?: (key: TranslationKey) => string;
 }
@@ -47,7 +48,7 @@ const SidebarItem = ({
   </div>
 );
 
-const Sidebar: React.FC<SidebarProps> = ({ activePage, onPageChange, pageVisibility, isCollapsed, onToggleCollapse, darkMode = false, t }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activePage, onPageChange, pageVisibility, isCollapsed, onToggleCollapse, onNavigateToStart, darkMode = false, t }) => {
   // Fallback translations if t is not provided
   const translate = (key: TranslationKey): string => {
     if (t) return t(key);
@@ -68,35 +69,56 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, onPageChange, pageVisibil
   const profileBgClass = darkMode ? 'bg-gray-700' : 'bg-[#252525]';
 
   return (
-    <div className={`${isCollapsed ? 'w-16' : 'w-52 lg:w-64'} ${bgClass} border-r h-full flex-col hidden md:flex flex-shrink-0 transition-all duration-300`}>
+    <div className={`relative ${isCollapsed ? 'w-16' : 'w-52 lg:w-64'} ${bgClass} border-r h-full flex-col hidden md:flex flex-shrink-0 transition-all duration-300`}>
       {/* Brand Header */}
-      <div className={`h-14 lg:h-16 flex items-center justify-between px-3 lg:px-4 border-b ${borderClass}`}>
+      <div className={`h-14 lg:h-16 flex items-center px-3 lg:px-4 border-b ${borderClass}`}>
+        <div
+          onClick={onNavigateToStart}
+          className={`flex-1 flex items-center cursor-pointer hover:opacity-80 transition-opacity active:scale-95 transform transition-transform`}
+          title="Voltar ao início"
+        >
+          {!isCollapsed && (
+            <img
+              src="./assets/ELETRO-DESKTOP.png"
+              alt="Eletromidia"
+              className="h-7 lg:h-8"
+            />
+          )}
+          {isCollapsed && (
+            <img
+              src="./assets/ELETRO-MOBILE.png"
+              alt="Eletromidia"
+              className="h-7 mx-auto"
+            />
+          )}
+        </div>
+
         {!isCollapsed && (
-          <img
-            src="./assets/ELETRO-DESKTOP.png"
-            alt="Eletromidia"
-            className="h-7 lg:h-8"
-          />
+          <button
+            onClick={onToggleCollapse}
+            className={`p-1.5 rounded-lg ${hoverClass} text-gray-500 hover:text-white transition-colors ml-2`}
+            title="Minimizar menu"
+          >
+            <PanelLeftClose className="w-4 h-4" />
+          </button>
         )}
+
         {isCollapsed && (
-          <img
-            src="./assets/ELETRO-MOBILE.png"
-            alt="Eletromidia"
-            className="h-7 mx-auto"
-          />
+          <div className="absolute top-0 left-0 w-full h-14 lg:h-16 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/20 pointer-events-none">
+            {/* Overlay for collapsed state if needed, but better to keep button visible */}
+          </div>
         )}
+      </div>
+
+      {isCollapsed && (
         <button
           onClick={onToggleCollapse}
-          className={`p-1.5 rounded-lg ${hoverClass} text-gray-500 hover:text-white transition-colors`}
-          title={isCollapsed ? 'Expandir menu' : 'Minimizar menu'}
+          className={`absolute -right-3 top-10 p-1 rounded-full bg-[#FF4D00] text-white shadow-lg hover:scale-110 transition-transform z-50`}
+          title="Expandir menu"
         >
-          {isCollapsed ? (
-            <PanelLeft className="w-4 h-4" />
-          ) : (
-            <PanelLeftClose className="w-4 h-4" />
-          )}
+          <PanelLeft className="w-3 h-3" />
         </button>
-      </div>
+      )}
 
       <div className="py-4 lg:py-6 space-y-1 flex-1 overflow-y-auto">
         {!isCollapsed && (

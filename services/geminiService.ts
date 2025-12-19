@@ -78,6 +78,22 @@ const getItemCriteria = (itemType: VerificationItemType): string => {
       - Verificar se a fundação/base da estrutura está visível e completa
       - Pode ser base de concreto, metal ou outro material
       - Verificar se parece estável e bem instalada`;
+      return `ELÉTRICA (ALTA e BAIXA) - ITEM CRÍTICO E PRIORITÁRIO:
+       
+       *** REGRA DE OURO: A ELÉTRICA É INDEPENDENTE DO ABRIGO ***
+       - Verifique a elétrica (fios/cabos) COMO SE O ABRIGO NÃO EXISTISSE.
+       - Mesmo que o abrigo esteja quebrado, incompleto, ou seja apenas uma base de concreto: SE TIVER FIO, A ELÉTRICA ESTÁ FEITA (COMPLETED).
+       
+       1. ELÉTRICA ALTA (POSTE/REDE AÉREA):
+       - FOCO TOTAL NO TOPO DO POSTE. Procure por fios pretos (drop) que saem da rede da rua e conectam no poste do abrigo.
+       - Se houver QUALQUER fio chegando do ar e conectando no poste, CONSIDERE FEITA (COMPLETED).
+       - NÃO importa se o abrigo embaixo está destruído. Tem fio no poste? Então está OK.
+       - EVIDÊNCIA FOTOGRÁFICA OBRIGATÓRIA: Selecione a foto que mostra o TOPO do poste com os fios.
+
+       2. ELÉTRICA BAIXA (BASE/FUNDAÇÃO):
+       - FOCO NA BASE DO ABRIGO. Procure por fios, cabos ou eletrodutos saindo do chão/concreto.
+       - Se houver fios visíveis na base (mesmo sem abrigo montado), CONSIDERE FEITA (COMPLETED).
+       - EVIDÊNCIA FOTOGRÁFICA OBRIGATÓRIA: Selecione a foto que mostra a BASE com os fios.`;
     default:
       return '';
   }
@@ -150,26 +166,35 @@ export const analyzeFolderImages = async (
         Você é um auditor de obras da Eletromidia.
         Analise as imagens da pasta: "${folderName}".
         ${equipmentContext}
-        ITENS A VERIFICAR: ${selectedLabels}
+        
+        >>> ITENS SELECIONADOS PARA ANÁLISE: ${selectedLabels} <<<
+        (IGNORE COMPLETAMENTE qualquer item que NÃO esteja listado acima. Ex: se "Abrigo" não está na lista, NÃO reclame de vidros quebrados, sujeira ou pichação. Fale APENAS sobre o que foi pedido.)
 
-        CRITÉRIOS DE VERIFICAÇÃO:
+        CRITÉRIOS DETALHADOS DOS ITENS SELECIONADOS:
         ${itemCriteria}
 
-        LÓGICA DE AVALIAÇÃO:
-        - Status "COMPLETED": TODOS os itens selecionados foram encontrados e estão OK nas imagens
-        - Status "PENDING": Um ou mais itens NÃO foram encontrados ou estão incompletos
+        LÓGICA DE AVALIAÇÃO RÍGIDA:
+        1. STATUS GERAL:
+           - "COMPLETED": TODOS os itens listados acima foram encontrados conforme os critérios.
+           - "PENDING": Pelo menos um item da lista está ausente ou incompleto.
         
-        IMPORTANTE:
-        - Analise apenas os itens listados acima
-        - Na dúvida sobre um item específico, se houver evidência parcial, considere como presente
-        - Selecione até 3 fotos que melhor demonstrem os itens verificados
+        2. REGRA ESPECÍFICA DA ELÉTRICA:
+           - Se o item "ELÉTRICA" foi solicitado:
+             - Considere "COMPLETED" se houver evidência visual de RAMAL (Alta) OU INFRAESTRUTURA DE BASE (Baixa).
+             - PENDING apenas se NENHUMA das duas existir.
+             - É CRUCIAL selecionar a foto correta (poste para Alta, chão para Baixa). NÃO selecione foto geral do abrigo se ela não mostrar o fio.
+
+        3. SELEÇÃO DE EVIDÊNCIAS (MUITO IMPORTANTE):
+           - Selecione de 1 a 3 fotos que PROVEM o status.
+           - Para ELÉTRICA, a foto TEM QUE MOSTRAR O FIO. Não serve foto da frente do abrigo. Busque fotos de detalhe, fotos olhando para cima (poste) ou para o chão.
+           - Se status for COMPLETED, é OBRIGATÓRIO ter pelo menos 1 foto selecionada.
 
         SAÍDA JSON:
         {
           "status": "COMPLETED" | "PENDING",
           "selectedFiles": ["arquivo1.jpg", "arquivo2.jpg", "arquivo3.jpg"],
-          "reason": "Explicação curta em PT-BR indicando quais itens foram encontrados e quais estão faltando.",
-          "observation": "Observações adicionais relevantes sobre a instalação (ex: danos visíveis, sujeira excessiva, componentes extras, condições especiais do local, etc). Se não houver nada relevante, deixe em branco."
+          "reason": "DEVE SEGUIR ESTRITAMENTE O PADRÃO: 'Após análise, <resumo>'. Ex: 'Após análise, foi identificado o ramal de ligação no poste (Elétrica Alta).', 'Após análise, identificada infraestrutura elétrica na base.'",
+          "observation": "Observações estritamente sobre os itens analisados. Se analisou só elétrica, NÃO comente sobre avarias no abrigo."
         }
       `;
 
@@ -256,4 +281,55 @@ export const analyzeFolderImages = async (
     selectedFiles: [],
     reason: "Erro: Número máximo de tentativas excedido."
   };
+};
+
+export const sendChatMessage = async (
+  message: string,
+  history: { role: 'user' | 'model'; parts: { text: string }[] }[],
+  context?: string
+): Promise<string> => {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("API Key não configurada");
+  }
+
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+  const systemPrompt = "Você é um assistente inteligente e amigável da Eletromidia. \n\nIMPORTANTE: Responda de forma DIRETA, CURTA e OBJETIVA. Evite enrolação ou formalidades excessivas. Vá direto ao ponto da dúvida do usuário. Seja natural e prestativo, mas valorize o tempo do usuário com respostas concisas.";
+
+  const fullHistory: any[] = [
+    {
+      role: "user",
+      parts: [{ text: systemPrompt }]
+    },
+    {
+      role: "model",
+      parts: [{ text: "Entendido! Serei super natural, prestativo e humano nas respostas, como um colega de trabalho. Pode deixar comigo." }]
+    },
+    ...history
+  ];
+
+  const currentMessageParts = [{ text: message }];
+  if (context) {
+    currentMessageParts.push({ text: `\n\nCONTEXTO ATUAL DO USUÁRIO:\n${context}` });
+  }
+
+  fullHistory.push({
+    role: "user",
+    parts: currentMessageParts
+  });
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-flash-latest',
+      contents: fullHistory,
+      config: {
+        responseMimeType: "text/plain"
+      }
+    });
+
+    return response.text || "Sem resposta.";
+  } catch (error: any) {
+    console.error("Erro no chat:", error);
+    return "Desculpe, ocorreu um erro ao processar sua mensagem. Tente novamente.";
+  }
 };

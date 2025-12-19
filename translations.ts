@@ -116,6 +116,8 @@ export const translations = {
         item_totem_digital_desc: 'Totem publicitário digital',
         item_fundacao_label: 'Fundação',
         item_fundacao_desc: 'Base/fundação da estrutura',
+        item_eletrica_label: 'Elétrica',
+        item_eletrica_desc: 'Verifica Elétrica Alta (Poste) e Elétrica Baixa (Base) simultaneamente',
 
         // Upload Modal
         confirmUploadTitle: 'Confirmar Upload?',
@@ -331,6 +333,8 @@ export const translations = {
         item_totem_digital_desc: 'Digital advertising totem',
         item_fundacao_label: 'Foundation',
         item_fundacao_desc: 'Structure base/foundation',
+        item_eletrica_label: 'Electrical',
+        item_eletrica_desc: 'Checks High Electrical (Pole) and Low Electrical (Base) simultaneously',
 
         // Upload Modal
         confirmUploadTitle: 'Confirm Upload?',

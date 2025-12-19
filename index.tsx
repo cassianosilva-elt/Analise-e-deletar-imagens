@@ -44,7 +44,9 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
   }
 }
 
+// Google login variables removed since auth is no longer used
 const root = ReactDOM.createRoot(rootElement);
+
 root.render(
   <React.StrictMode>
     <ErrorBoundary>

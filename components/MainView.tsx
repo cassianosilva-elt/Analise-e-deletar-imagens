@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Folder, Image as ImageIcon, CheckCircle2, AlertCircle, Clock, File, Trash2, Square, CheckSquare, ExternalLink, MapPin, Building2 } from 'lucide-react';
 import { FolderItem, FileItem, ItemType, AnalysisStatus, EquipmentInfo } from '../types';
 import { TranslationKey } from '../translations';
+import { naturalCompare } from '../utils/sorting';
 import ImageLightbox from './ImageLightbox';
 
 interface MainViewProps {
@@ -95,14 +96,19 @@ const MainView: React.FC<MainViewProps> = ({
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  const sortedItems = [...items].sort((a, b) => {
-    if (a.type === ItemType.FOLDER && b.type !== ItemType.FOLDER) return -1;
-    if (a.type !== ItemType.FOLDER && b.type === ItemType.FOLDER) return 1;
-    return a.name.localeCompare(b.name);
-  });
+  const sortedItems = useMemo(() => {
+    return [...items].sort((a, b) => {
+      // Folders always come first
+      if (a.type === ItemType.FOLDER && b.type !== ItemType.FOLDER) return -1;
+      if (a.type !== ItemType.FOLDER && b.type === ItemType.FOLDER) return 1;
+
+      // Use natural sort for names
+      return naturalCompare(a.name, b.name);
+    });
+  }, [items]);
 
   const imageItems = useMemo(() =>
-    sortedItems.filter(item => item.type === ItemType.IMAGE && item.url) as FileItem[],
+    sortedItems.filter(item => item.type === ItemType.IMAGE && (item as FileItem).url) as FileItem[],
     [sortedItems]
   );
 
@@ -262,7 +268,7 @@ const MainView: React.FC<MainViewProps> = ({
                 onClick={() => {
                   if (isFolder) {
                     onNavigate(item as FolderItem);
-                  } else if (isImage && item.url) {
+                  } else if (isImage && (item as FileItem).url) {
                     handleImageClick(item as FileItem);
                   }
                 }}
@@ -282,8 +288,8 @@ const MainView: React.FC<MainViewProps> = ({
                         <Folder className="w-8 h-8 sm:w-10 sm:h-10 text-[#FF4D00] fill-orange-100" />
                       ) : item.type === ItemType.IMAGE ? (
                         <div className="relative">
-                          {item.url ? (
-                            <img src={item.url} className={`w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-lg border ${isSelected ? 'border-green-400 shadow-sm' : 'border-gray-200'}`} alt="" />
+                          {(item as FileItem).url ? (
+                            <img src={(item as FileItem).url!} className={`w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-lg border ${isSelected ? 'border-green-400 shadow-sm' : 'border-gray-200'}`} alt="" />
                           ) : (
                             <ImageIcon className="w-8 h-8 sm:w-10 sm:h-10 text-gray-400" />
                           )}
@@ -385,8 +391,8 @@ const MainView: React.FC<MainViewProps> = ({
                         <Folder className="w-5 h-5 text-[#FF4D00] fill-orange-100" />
                       ) : item.type === ItemType.IMAGE ? (
                         <div className="relative group-hover:scale-105 transition-transform">
-                          {item.url ? (
-                            <img src={item.url} className={`w-10 h-10 object-cover rounded-lg border ${isSelected ? 'border-green-400 shadow-sm' : 'border-gray-200'}`} alt="" />
+                          {(item as FileItem).url ? (
+                            <img src={(item as FileItem).url!} className={`w-10 h-10 object-cover rounded-lg border ${isSelected ? 'border-green-400 shadow-sm' : 'border-gray-200'}`} alt="" />
                           ) : (
                             <ImageIcon className="w-5 h-5 text-gray-400" />
                           )}
