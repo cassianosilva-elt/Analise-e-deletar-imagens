@@ -1,510 +1,447 @@
 import React, { useState, useMemo } from 'react';
-import { Folder, Image as ImageIcon, CheckCircle2, AlertCircle, Clock, File, Trash2, Square, CheckSquare, ExternalLink, MapPin, Building2 } from 'lucide-react';
-import { FolderItem, FileItem, ItemType, AnalysisStatus, EquipmentInfo } from '../types';
-import { TranslationKey } from '../translations';
+import {
+  Folder, Image as ImageIcon, CheckCircle2, AlertCircle, Clock,
+  ExternalLink, MapPin, ChevronDown, ChevronUp,
+  Search, Filter, ShieldCheck, UserCheck, MessageSquare, Info,
+  Eye, EyeOff, PanelRightClose, PanelRightOpen
+} from 'lucide-react';
+import { FolderItem, FileItem, ItemType, AnalysisStatus } from '../types';
+import { useProjectStore } from '../store/projectStore';
+import { useUIStore } from '../store/uiStore';
+import { useRunStore } from '../store/runStore';
 import { naturalCompare } from '../utils/sorting';
 import ImageLightbox from './ImageLightbox';
 
-interface MainViewProps {
-  items: (FolderItem | FileItem)[];
-  onNavigate: (item: FolderItem) => void;
-  onDeleteFolder?: (folderPath: string) => void;
-  onToggleFolderSelection?: (folderPath: string) => void;
-  onManualStatusChange?: (folderPath: string, status: AnalysisStatus) => void;
-  onToggleImageSelection?: (imagePath: string) => void;
-  onUpdateObservation?: (folderPath: string, observation: string) => void;
-  selectedFolders?: Set<string>;
-  currentFolderStatus?: AnalysisStatus;
-  currentFolderReason?: string;
-  currentFolderObservation?: string;
-  currentFolderPath?: string;
-  currentFolderEquipmentInfo?: EquipmentInfo;
-  currentFolderEnrichedAddress?: string;
-  darkMode?: boolean;
-  t?: (key: TranslationKey) => string;
-}
-
-const StatusBadge = ({ status, t }: { status: AnalysisStatus, t?: (key: TranslationKey) => string }) => {
-  const translate = (key: TranslationKey): string => {
-    if (t) return t(key);
-    // Fallbacks
-    switch (key) {
-      case 'completed': return 'Concluído';
-      case 'pending': return 'Pendente';
-      case 'analyzing': return 'Analisando';
-      case 'notAnalyzed': return 'Não analisado';
-      default: return key;
-    }
-  };
-
+const StatusBadge = ({ status, darkMode = false }: { status: AnalysisStatus, darkMode?: boolean }) => {
   switch (status) {
     case AnalysisStatus.COMPLETED:
       return (
-        <div className="inline-flex items-center text-green-600 text-[10px] sm:text-xs font-medium bg-green-50 px-1.5 sm:px-2 py-0.5 rounded-full border border-green-100">
-          <CheckCircle2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
-          <span className="hidden sm:inline">{translate('completed')}</span>
-          <span className="sm:hidden">OK</span>
+        <div className={`inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full ${darkMode ? 'text-emerald-400 bg-emerald-500/10' : 'text-emerald-600 bg-emerald-50'}`}>
+          <CheckCircle2 className="w-3 h-3 mr-1" /> OK
         </div>
       );
     case AnalysisStatus.PENDING:
       return (
-        <div className="inline-flex items-center text-amber-600 text-[10px] sm:text-xs font-medium bg-amber-50 px-1.5 sm:px-2 py-0.5 rounded-full border border-amber-100">
-          <AlertCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
-          <span className="hidden sm:inline">{translate('pending')}</span>
-          <span className="sm:hidden">!</span>
+        <div className={`inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full ${darkMode ? 'text-amber-400 bg-amber-500/10' : 'text-amber-600 bg-amber-50'}`}>
+          <AlertCircle className="w-3 h-3 mr-1" /> Pendente
         </div>
       );
     case AnalysisStatus.PROCESSING:
       return (
-        <div className="inline-flex items-center text-blue-600 text-[10px] sm:text-xs font-medium bg-blue-50 px-1.5 sm:px-2 py-0.5 rounded-full border border-blue-100">
-          <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1 animate-spin" />
-          <span className="hidden sm:inline">{translate('analyzing')}</span>
-          <span className="sm:hidden">...</span>
+        <div className={`inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full ${darkMode ? 'text-blue-400 bg-blue-500/10' : 'text-blue-600 bg-blue-50'}`}>
+          <Clock className="w-3 h-3 mr-1 animate-spin" /> Analisando
         </div>
       );
     default:
       return (
-        <div className="inline-flex items-center text-gray-400 text-[10px] sm:text-xs font-medium bg-gray-50 px-1.5 sm:px-2 py-0.5 rounded-full border border-gray-100">
-          <span className="hidden sm:inline">{translate('notAnalyzed')}</span>
-          <span className="sm:hidden">-</span>
+        <div className={`inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full ${darkMode ? 'text-gray-500 bg-gray-800' : 'text-gray-400 bg-gray-100'}`}>
+          Aguardando
         </div>
       );
   }
 };
 
-const MainView: React.FC<MainViewProps> = ({
-  items,
-  onNavigate,
-  onDeleteFolder,
-  onToggleFolderSelection,
-  onManualStatusChange,
-  onToggleImageSelection,
-  selectedFolders,
-  currentFolderStatus,
-  currentFolderReason,
-  currentFolderObservation,
-  currentFolderPath,
-  onUpdateObservation,
-  currentFolderEquipmentInfo,
-  currentFolderEnrichedAddress,
-  t
-}) => {
-  const translate = (key: TranslationKey): string => {
-    if (t) return t(key);
-    return key;
-  };
+const MainView: React.FC = () => {
+  const { rootFolder, updateFolderStatus, updateFolderObservation } = useProjectStore();
+  const {
+    currentPath,
+    setCurrentPath,
+    darkMode,
+    searchQuery,
+    setSearchQuery
+  } = useUIStore();
+  const { isProcessing, activeCount } = useRunStore();
+
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  const sortedItems = useMemo(() => {
-    return [...items].sort((a, b) => {
-      // Folders always come first
-      if (a.type === ItemType.FOLDER && b.type !== ItemType.FOLDER) return -1;
-      if (a.type !== ItemType.FOLDER && b.type === ItemType.FOLDER) return 1;
+  // Panel visibility states
+  const [showPhotos, setShowPhotos] = useState(true);
+  const [showDetails, setShowDetails] = useState(true);
 
-      // Use natural sort for names
+  // Helper to find folder content based on current path
+  const currentFolder = useMemo(() => {
+    if (!rootFolder) return null;
+    let current: FolderItem = rootFolder;
+    for (const segment of currentPath.slice(1)) {
+      const found = current.children.find(c => c.type === ItemType.FOLDER && c.name === segment.name);
+      if (found) current = found as FolderItem;
+      else break;
+    }
+    return current;
+  }, [rootFolder, currentPath]);
+
+  // Sort and filter subfolders
+  const subfolders = useMemo(() => {
+    if (!currentFolder) return [];
+
+    let filtered = currentFolder.children.filter(item => item.type === ItemType.FOLDER) as FolderItem[];
+
+    if (searchQuery) {
+      filtered = filtered.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        f.enrichedAddress?.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
+
+    return filtered.sort((a, b) => {
+      const aPending = a.status === AnalysisStatus.PENDING ? 0 : 1;
+      const bPending = b.status === AnalysisStatus.PENDING ? 0 : 1;
+      if (aPending !== bPending) return aPending - bPending;
+
+      const aConfidence = a.aiResult?.eletrica?.confidence ?? 1;
+      const bConfidence = b.aiResult?.eletrica?.confidence ?? 1;
+      if (aConfidence < 0.6 && bConfidence >= 0.6) return -1;
+      if (aConfidence >= 0.6 && bConfidence < 0.6) return 1;
+
       return naturalCompare(a.name, b.name);
     });
-  }, [items]);
+  }, [currentFolder, searchQuery]);
 
-  const imageItems = useMemo(() =>
-    sortedItems.filter(item => item.type === ItemType.IMAGE && (item as FileItem).url) as FileItem[],
-    [sortedItems]
-  );
+  const selectedFolder = useMemo(() => {
+    if (!selectedFolderId) return subfolders[0] || null;
+    return subfolders.find(f => f.id === selectedFolderId) || subfolders[0] || null;
+  }, [selectedFolderId, subfolders]);
 
-  const handleDelete = (e: React.MouseEvent, folderPath: string) => {
-    e.stopPropagation();
-    if (onDeleteFolder) {
-      onDeleteFolder(folderPath);
+  const selectedImages = useMemo(() => {
+    if (!selectedFolder) return [];
+    return selectedFolder.children.filter(c => c.type === ItemType.IMAGE) as FileItem[];
+  }, [selectedFolder]);
+
+  const handleNavigate = (folder: FolderItem) => {
+    setCurrentPath([...currentPath, { name: folder.name, path: folder.path }]);
+    setSelectedFolderId(null);
+  };
+
+  const handleManualStatus = (status: AnalysisStatus) => {
+    if (selectedFolder) {
+      updateFolderStatus(selectedFolder.path, status, undefined, undefined, undefined, undefined, true);
     }
   };
 
-  const handleManualStatus = (e: React.MouseEvent, folderPath: string, status: AnalysisStatus) => {
-    e.stopPropagation();
-    if (onManualStatusChange) {
-      onManualStatusChange(folderPath, status);
-    }
+  // Color scheme
+  const colors = {
+    bg: darkMode ? 'bg-[#0a0b0d]' : 'bg-[#f8fafc]',
+    panel: darkMode ? 'bg-[#111318]' : 'bg-white',
+    border: darkMode ? 'border-gray-800/50' : 'border-gray-100',
+    text: darkMode ? 'text-gray-100' : 'text-gray-800',
+    textMuted: darkMode ? 'text-gray-500' : 'text-gray-400',
+    hover: darkMode ? 'hover:bg-gray-800/50' : 'hover:bg-gray-50',
+    accent: 'text-orange-500'
   };
 
-  const handleImageSelectToggle = (e: React.MouseEvent, imagePath: string) => {
-    e.stopPropagation();
-    if (onToggleImageSelection) {
-      onToggleImageSelection(imagePath);
-    }
-  };
-
-  const handleToggleSelect = (e: React.MouseEvent, folderPath: string) => {
-    e.stopPropagation();
-    if (onToggleFolderSelection) {
-      onToggleFolderSelection(folderPath);
-    }
-  };
-
-  const handleImageClick = (item: FileItem) => {
-    const index = imageItems.findIndex(img => img.path === item.path);
-    if (index !== -1) {
-      setLightboxIndex(index);
-      setLightboxOpen(true);
-    }
-  };
+  if (!currentFolder) return null;
 
   return (
-    <div className="flex-1 bg-[#F8F9FA] overflow-y-auto p-3 sm:p-4 lg:p-6">
+    <div className={`flex flex-col h-full overflow-hidden ${colors.bg}`}>
 
-      {/* Equipment Info Banner - When inside a folder with equipment data */}
-      {currentFolderEquipmentInfo && (
-        <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start flex-1 min-w-0">
-              <div className="p-2 rounded-lg bg-blue-100 text-blue-600 mr-3 flex-shrink-0">
-                <Building2 className="w-4 h-4 sm:w-5 sm:h-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-gray-800 text-xs sm:text-sm">{translate('equipmentInfo')}</h3>
-                {currentFolderEnrichedAddress && (
-                  <div className="flex items-center gap-1 text-xs sm:text-sm text-blue-700 mt-1">
-                    <MapPin className="w-3 h-3 flex-shrink-0" />
-                    <span className="truncate">{currentFolderEnrichedAddress}</span>
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {currentFolderEquipmentInfo.modeloAbrigo && currentFolderEquipmentInfo.modeloAbrigo !== '-' && (
-                    <span className="text-[10px] sm:text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
-                      {translate('model')}: {currentFolderEquipmentInfo.modeloAbrigo}
-                    </span>
-                  )}
-                  {currentFolderEquipmentInfo.nEletro && (
-                    <span className="text-[10px] sm:text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full">
-                      N° Eletro: {currentFolderEquipmentInfo.nEletro}
-                    </span>
-                  )}
-                  {currentFolderEquipmentInfo.nParada && (
-                    <span className="text-[10px] sm:text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full">
-                      N° Parada: {currentFolderEquipmentInfo.nParada}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-            {/* Operations Button */}
-            {currentFolderEquipmentInfo.linkOperacoes && (
-              <button
-                onClick={() => window.open(currentFolderEquipmentInfo.linkOperacoes, '_blank')}
-                className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-[#FF4D00] hover:bg-[#E64500] text-white text-xs sm:text-sm font-semibold rounded-lg shadow-md transition-all"
-              >
-                <ExternalLink className="w-4 h-4" />
-                <span className="hidden sm:inline">{translate('openOperations')}</span>
-                <span className="sm:hidden">Operações</span>
-              </button>
+      {/* Minimalist Header */}
+      <div className={`flex items-center justify-between px-6 py-4 border-b ${colors.border} ${colors.panel}`}>
+        <div className="flex items-center gap-4">
+          <h2 className={`font-bold text-lg ${colors.text}`}>Auditoria</h2>
+          <div className="flex items-center gap-2">
+            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${darkMode ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-600'}`}>
+              {subfolders.length} pastas
+            </span>
+            {isProcessing && (
+              <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1.5 ${darkMode ? 'bg-orange-500/10 text-orange-400' : 'bg-orange-50 text-orange-600'}`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                {activeCount} em análise
+              </span>
             )}
           </div>
         </div>
-      )}
-
-      {/* AI Summary Banner */}
-      {currentFolderReason && (
-        <div className={`mb-4 sm:mb-6 p-3 sm:p-4 rounded-xl border flex items-start shadow-sm
-          ${currentFolderStatus === AnalysisStatus.COMPLETED
-            ? 'bg-green-50/50 border-green-200'
-            : 'bg-white border-gray-200'}
-        `}>
-          <div className={`p-1.5 sm:p-2 rounded-lg mr-3 sm:mr-4 flex-shrink-0 ${currentFolderStatus === AnalysisStatus.COMPLETED ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>
-            {currentFolderStatus === AnalysisStatus.COMPLETED ? <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />}
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${colors.textMuted}`} />
+            <input
+              type="text"
+              placeholder="Buscar..."
+              className={`pl-9 pr-4 py-2 text-sm rounded-xl border outline-none w-56 transition-all focus:ring-2 focus:ring-orange-500/20 ${darkMode ? 'bg-gray-900/50 border-gray-800 text-gray-200 placeholder:text-gray-600' : 'bg-gray-50 border-gray-200 text-gray-800 placeholder:text-gray-400'}`}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-          <div className="min-w-0">
-            <h3 className="font-semibold text-gray-800 text-xs sm:text-sm">{translate('analysisSummary')}</h3>
-            <p className="text-gray-600 text-xs sm:text-sm mt-0.5 sm:mt-1 break-words">{currentFolderReason}</p>
+
+          {/* Panel toggles */}
+          <div className="flex items-center gap-1 border-l pl-3 border-gray-200 dark:border-gray-800">
+            <button
+              onClick={() => setShowPhotos(!showPhotos)}
+              className={`p-2 rounded-lg transition-all ${showPhotos ? (darkMode ? 'bg-orange-500/10 text-orange-400' : 'bg-orange-50 text-orange-600') : colors.hover + ' ' + colors.textMuted}`}
+              title={showPhotos ? 'Ocultar fotos' : 'Mostrar fotos'}
+            >
+              {showPhotos ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              className={`p-2 rounded-lg transition-all ${showDetails ? (darkMode ? 'bg-orange-500/10 text-orange-400' : 'bg-orange-50 text-orange-600') : colors.hover + ' ' + colors.textMuted}`}
+              title={showDetails ? 'Ocultar detalhes' : 'Mostrar detalhes'}
+            >
+              {showDetails ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
+            </button>
           </div>
-        </div>
-      )}
-
-      {/* Observation Field */}
-      {currentFolderPath && (
-        <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-xl border border-gray-200 bg-white shadow-sm">
-          <h3 className="font-semibold text-gray-800 text-xs sm:text-sm mb-2">{translate('observations')}</h3>
-          <textarea
-            className="w-full text-xs sm:text-sm p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
-            rows={3}
-            placeholder={translate('addObservations')}
-            value={currentFolderObservation || ''}
-            onChange={(e) => onUpdateObservation?.(currentFolderPath, e.target.value)}
-          />
-        </div>
-      )}
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {/* Header - Hidden on small screens, shown as card layout instead */}
-        <div className="hidden lg:grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50/80 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          <div className="col-span-5">{translate('name')}</div>
-          <div className="col-span-3">{translate('status')}</div>
-          <div className="col-span-2 text-right">{translate('type')}</div>
-          <div className="col-span-2 text-right">{translate('actions')}</div>
-        </div>
-
-        {/* Mobile Header */}
-        <div className="sm:hidden px-4 py-2 bg-gray-50/80 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          {translate('stepItems')}
-        </div>
-
-        {/* Content */}
-        <div className="divide-y divide-gray-100">
-          {sortedItems.length === 0 && (
-            <div className="p-6 sm:p-8 text-center text-gray-400">
-              <Folder className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 opacity-20" />
-              <p className="text-sm sm:text-base">{translate('emptyFolder')}</p>
-            </div>
-          )}
-
-          {sortedItems.map((item, idx) => {
-            const isFolder = item.type === ItemType.FOLDER;
-            const isImage = item.type === ItemType.IMAGE;
-            const isSelected = !isFolder && (item as FileItem).selectedByAI;
-            const folderItem = item as FolderItem;
-            const isFolderSelected = isFolder && selectedFolders?.has(folderItem.path);
-
-            return (
-              <div
-                key={item.path + idx}
-                onClick={() => {
-                  if (isFolder) {
-                    onNavigate(item as FolderItem);
-                  } else if (isImage && (item as FileItem).url) {
-                    handleImageClick(item as FileItem);
-                  }
-                }}
-                className={`
-                  p-3 sm:p-4 lg:px-6 lg:py-3 transition-colors
-                  ${isFolder ? 'cursor-pointer hover:bg-gray-50 active:bg-gray-100' : ''}
-                  ${isSelected ? 'bg-green-50/60' : ''}
-                  ${isFolderSelected ? 'bg-blue-50/60 border-l-4 border-l-blue-400' : ''}
-                `}
-              >
-                {/* Mobile/Tablet Layout (Simplified for brevity, keeping existing structure but just updating Desktop mainly for now or both if I can) */}
-                <div className="lg:hidden">
-                  <div className="flex items-center gap-3">
-                    {/* Icon/Thumbnail */}
-                    <div className="flex-shrink-0">
-                      {isFolder ? (
-                        <Folder className="w-8 h-8 sm:w-10 sm:h-10 text-[#FF4D00] fill-orange-100" />
-                      ) : item.type === ItemType.IMAGE ? (
-                        <div className="relative">
-                          {(item as FileItem).url ? (
-                            <img src={(item as FileItem).url!} className={`w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-lg border ${isSelected ? 'border-green-400 shadow-sm' : 'border-gray-200'}`} alt="" />
-                          ) : (
-                            <ImageIcon className="w-8 h-8 sm:w-10 sm:h-10 text-gray-400" />
-                          )}
-                          {isSelected && (
-                            <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-[2px] shadow-sm ring-2 ring-white">
-                              <CheckCircle2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <File className="w-8 h-8 sm:w-10 sm:h-10 text-gray-400" />
-                      )}
-                    </div>
-
-                    {/* Name & Meta */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-sm sm:text-base font-medium truncate ${isSelected ? 'text-green-800' : 'text-gray-700'}`}>
-                          {item.name}
-                        </span>
-                        {isFolder && <StatusBadge status={(item as FolderItem).status} t={t} />}
-                      </div>
-                      {/* Equipment enriched address */}
-                      {isFolder && folderItem.enrichedAddress && (
-                        <div className="flex items-center gap-1 text-[10px] sm:text-xs text-blue-600 mb-1">
-                          <MapPin className="w-3 h-3 flex-shrink-0" />
-                          <span className="truncate">{folderItem.enrichedAddress}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2 text-[10px] sm:text-xs text-gray-500">
-                        <span>{isFolder ? translate('folder') : translate('image')}</span>
-                        {isFolder && folderItem.equipmentInfo?.modeloAbrigo && folderItem.equipmentInfo.modeloAbrigo !== '-' && (
-                          <span className="text-purple-600">• {folderItem.equipmentInfo.modeloAbrigo}</span>
-                        )}
-                        {isSelected && <span className="text-green-600 font-semibold">• {translate('selectedReport')}</span>}
-                      </div>
-                    </div>
-
-                    {/* Mobile Actions */}
-                    <div className="flex items-center gap-1">
-                      {/* Link Operações button */}
-                      {isFolder && folderItem.equipmentInfo?.linkOperacoes && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(folderItem.equipmentInfo!.linkOperacoes, '_blank');
-                          }}
-                          className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                          title={translate('openOperations')}
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </button>
-                      )}
-                      {isFolder && onManualStatusChange && (
-                        <>
-                          <button
-                            onClick={(e) => handleManualStatus(e, (item as FolderItem).path, AnalysisStatus.COMPLETED)}
-                            className="p-2 text-green-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                          >
-                            <CheckCircle2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={(e) => handleManualStatus(e, (item as FolderItem).path, AnalysisStatus.PENDING)}
-                            className="p-2 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                          >
-                            <AlertCircle className="w-4 h-4" />
-                          </button>
-                        </>
-                      )}
-
-                      {isImage && onToggleImageSelection && (
-                        <button
-                          onClick={(e) => handleImageSelectToggle(e, (item as FileItem).path)}
-                          className={`p-2 rounded-lg transition-colors ${isSelected ? 'text-green-500 bg-green-50' : 'text-gray-300 hover:text-gray-500'}`}
-                        >
-                          {isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
-                        </button>
-                      )}
-
-                      {isFolder && onDeleteFolder && (
-                        <button
-                          onClick={(e) => handleDelete(e, (item as FolderItem).path)}
-                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
-                          title={translate('deleteFolder')}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Desktop Layout */}
-                <div className="hidden lg:grid grid-cols-12 gap-4 items-center text-sm">
-                  {/* Name */}
-                  <div className="col-span-5 flex items-center min-w-0">
-                    <div className="mr-3 flex-shrink-0">
-                      {isFolder ? (
-                        <Folder className="w-5 h-5 text-[#FF4D00] fill-orange-100" />
-                      ) : item.type === ItemType.IMAGE ? (
-                        <div className="relative group-hover:scale-105 transition-transform">
-                          {(item as FileItem).url ? (
-                            <img src={(item as FileItem).url!} className={`w-10 h-10 object-cover rounded-lg border ${isSelected ? 'border-green-400 shadow-sm' : 'border-gray-200'}`} alt="" />
-                          ) : (
-                            <ImageIcon className="w-5 h-5 text-gray-400" />
-                          )}
-                          {isSelected && (
-                            <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-[2px] shadow-sm ring-2 ring-white">
-                              <CheckCircle2 className="w-3 h-3" />
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <File className="w-5 h-5 text-gray-400" />
-                      )}
-                    </div>
-                    <div className="flex flex-col min-w-0">
-                      <span className={`truncate font-medium ${isSelected ? 'text-green-800' : 'text-gray-700'}`}>
-                        {item.name}
-                      </span>
-                      {/* Equipment enriched address - Desktop */}
-                      {isFolder && folderItem.enrichedAddress && (
-                        <div className="flex items-center gap-1 text-xs text-blue-600">
-                          <MapPin className="w-3 h-3 flex-shrink-0" />
-                          <span className="truncate">{folderItem.enrichedAddress}</span>
-                        </div>
-                      )}
-                      {isFolder && folderItem.equipmentInfo?.modeloAbrigo && folderItem.equipmentInfo.modeloAbrigo !== '-' && (
-                        <span className="text-[10px] text-purple-600 font-medium">{translate('model')}: {folderItem.equipmentInfo.modeloAbrigo}</span>
-                      )}
-                      {isSelected && <span className="text-[10px] text-green-600 font-semibold uppercase tracking-wide">{translate('selectedReport')}</span>}
-                    </div>
-                  </div>
-
-                  {/* Status */}
-                  <div className="col-span-3">
-                    {isFolder && <StatusBadge status={(item as FolderItem).status} t={t} />}
-                  </div>
-
-                  {/* Type/Meta */}
-                  <div className="col-span-2 text-right text-gray-400 text-xs">
-                    {isFolder ? translate('folder') : translate('image')}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="col-span-2 text-right flex items-center justify-end gap-1">
-
-                    {/* Link Operações button - Desktop */}
-                    {isFolder && folderItem.equipmentInfo?.linkOperacoes && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(folderItem.equipmentInfo!.linkOperacoes, '_blank');
-                        }}
-                        className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                        title={translate('openOperations')}
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </button>
-                    )}
-
-                    {/* Manual Override Controls */}
-                    {isFolder && onManualStatusChange && (
-                      <>
-                        <button
-                          onClick={(e) => handleManualStatus(e, (item as FolderItem).path, AnalysisStatus.COMPLETED)}
-                          className="p-1.5 text-green-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                          title={translate('markCompleted')}
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => handleManualStatus(e, (item as FolderItem).path, AnalysisStatus.PENDING)}
-                          className="p-1.5 text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                          title={translate('markPending')}
-                        >
-                          <AlertCircle className="w-4 h-4" />
-                        </button>
-                      </>
-                    )}
-
-                    {isImage && onToggleImageSelection && (
-                      <button
-                        onClick={(e) => handleImageSelectToggle(e, (item as FileItem).path)}
-                        title={isSelected ? translate('removeSelection') : translate('selectImage')}
-                        className={`p-1.5 rounded-lg transition-colors ${isSelected ? 'text-green-500 bg-green-50 hover:bg-green-100' : 'text-gray-300 hover:text-gray-500 hover:bg-gray-50'}`}
-                      >
-                        {isSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
-                      </button>
-                    )}
-
-                    {isFolder && onDeleteFolder && (
-                      <button
-                        onClick={(e) => handleDelete(e, (item as FolderItem).path)}
-                        className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title={translate('deleteFolder')}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
         </div>
       </div>
 
-      {/* Image Lightbox */}
+      <div className="flex flex-1 overflow-hidden">
+
+        {/* COLUMN 1: SITE LIST */}
+        <div className={`w-80 flex flex-col border-r ${colors.border} ${colors.panel}`}>
+          <div className="flex-1 overflow-y-auto">
+            {subfolders.map(f => (
+              <div
+                key={f.id}
+                onClick={() => setSelectedFolderId(f.id)}
+                className={`p-4 border-b ${colors.border} cursor-pointer transition-all relative
+                    ${selectedFolder?.id === f.id ? (darkMode ? 'bg-orange-500/5' : 'bg-orange-50/50') : colors.hover}
+                `}
+              >
+                {selectedFolder?.id === f.id && (
+                  <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-orange-500" />
+                )}
+                <div className="flex justify-between items-start mb-1">
+                  <span className={`text-sm font-medium truncate flex-1 pr-2 ${colors.text}`}>{f.name}</span>
+                  <StatusBadge status={f.status} darkMode={darkMode} />
+                </div>
+                <div className={`flex items-center gap-1 text-[11px] ${colors.textMuted} mb-2`}>
+                  <MapPin className="w-3 h-3" />
+                  <span className="truncate">{f.enrichedAddress || 'Endereço não definido'}</span>
+                </div>
+                {f.aiResult?.eletrica && (
+                  <div className="flex items-center gap-2">
+                    <div className={`flex-1 h-1 rounded-full overflow-hidden ${darkMode ? 'bg-gray-800' : 'bg-gray-200'}`}>
+                      <div
+                        className={`h-full rounded-full transition-all ${f.aiResult.eletrica.confidence < 0.6 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                        style={{ width: `${f.aiResult.eletrica.confidence * 100}%` }}
+                      />
+                    </div>
+                    <span className={`text-[9px] font-medium ${f.aiResult.eletrica.confidence < 0.6 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                      {(f.aiResult.eletrica.confidence * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* COLUMN 2: EVIDENCE PREVIEW */}
+        {showPhotos && (
+          <div className={`flex-1 flex flex-col overflow-hidden ${darkMode ? 'bg-[#0a0b0d]' : 'bg-[#f1f5f9]'}`}>
+            {selectedFolder ? (
+              <div className="flex-1 flex flex-col p-6 overflow-y-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-col">
+                    <h3 className={`text-lg font-bold ${colors.text}`}>{selectedFolder.name}</h3>
+                    <p className={`text-xs ${colors.textMuted}`}>{selectedFolder.enrichedAddress}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    {selectedFolder.equipmentInfo?.linkOperacoes && (
+                      <button
+                        onClick={() => window.open(selectedFolder.equipmentInfo!.linkOperacoes, '_blank')}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white text-xs font-semibold rounded-xl shadow-lg shadow-orange-500/20 transition-all"
+                      >
+                        <ExternalLink className="w-4 h-4" /> Ver Operações
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleNavigate(selectedFolder)}
+                      className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl transition-all ${darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'}`}
+                    >
+                      <Folder className="w-4 h-4" /> Abrir
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {selectedImages.map((img, idx) => (
+                    <div
+                      key={img.path}
+                      className={`relative rounded-2xl overflow-hidden cursor-pointer group transition-all transform hover:scale-[1.02] hover:shadow-xl
+                          ${img.selectedByAI ? 'ring-2 ring-emerald-500 ring-offset-2' : ''}
+                          ${darkMode ? 'ring-offset-gray-900' : 'ring-offset-white'}
+                      `}
+                      onClick={() => { setLightboxIndex(idx); setLightboxOpen(true); }}
+                    >
+                      <img src={img.url} alt={img.name} className="w-full h-56 object-cover" />
+                      {img.selectedByAI && (
+                        <div className="absolute top-3 left-3 bg-emerald-500 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-lg flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> EVIDÊNCIA
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all flex items-end justify-center pb-4">
+                        <span className="text-white text-xs font-medium bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+                          Ampliar
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-12">
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  <ImageIcon className={`w-8 h-8 ${colors.textMuted}`} />
+                </div>
+                <h3 className={`text-lg font-bold ${colors.text} mb-2`}>Selecione uma pasta</h3>
+                <p className={`text-sm ${colors.textMuted} max-w-xs`}>Escolha um site na lista lateral para visualizar as imagens e resultados da análise.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* COLUMN 3: DETAILS PANEL */}
+        {showDetails && selectedFolder && (
+          <div className={`w-96 flex flex-col border-l ${colors.border} ${colors.panel}`}>
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="p-6 overflow-y-auto flex-1">
+
+                {/* AI Analysis Section */}
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className={`p-2 rounded-xl ${darkMode ? 'bg-purple-500/10' : 'bg-purple-50'}`}>
+                      <ShieldCheck className="w-4 h-4 text-purple-500" />
+                    </div>
+                    <h4 className={`font-bold text-sm ${colors.text}`}>Análise IA</h4>
+                  </div>
+
+                  {selectedFolder.aiResult ? (
+                    <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-gray-900/50 border-gray-800' : 'bg-gray-50 border-gray-100'}`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className={`text-xs font-bold uppercase ${selectedFolder.aiResult.status === 'COMPLETED' ? 'text-emerald-500' : 'text-amber-500'}`}>
+                          {selectedFolder.aiResult.status === 'COMPLETED' ? 'Concluído' : 'Pendente'}
+                        </span>
+                        <span className={`text-[10px] ${colors.textMuted}`}>
+                          {new Date(selectedFolder.aiResult.timestamp || Date.now()).toLocaleTimeString()}
+                        </span>
+                      </div>
+                      <p className={`text-xs leading-relaxed ${colors.text}`}>
+                        {selectedFolder.aiResult.reason || 'Sem descrição da análise.'}
+                      </p>
+
+                      {selectedFolder.aiResult.eletrica && (
+                        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className={`text-[10px] font-bold uppercase ${colors.textMuted}`}>Confiança</span>
+                            <span className={`text-xs font-bold ${selectedFolder.aiResult.eletrica.confidence < 0.6 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                              {(selectedFolder.aiResult.eletrica.confidence * 100).toFixed(0)}%
+                            </span>
+                          </div>
+                          <div className={`w-full h-2 rounded-full overflow-hidden ${darkMode ? 'bg-gray-800' : 'bg-gray-200'}`}>
+                            <div
+                              className={`h-full rounded-full transition-all ${selectedFolder.aiResult.eletrica.confidence < 0.6 ? 'bg-gradient-to-r from-amber-400 to-amber-500' : 'bg-gradient-to-r from-emerald-400 to-emerald-500'}`}
+                              style={{ width: `${selectedFolder.aiResult.eletrica.confidence * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className={`p-6 text-center border-2 border-dashed rounded-2xl ${darkMode ? 'border-gray-800' : 'border-gray-200'}`}>
+                      <Clock className={`w-8 h-8 mx-auto mb-2 ${colors.textMuted}`} />
+                      <p className={`text-xs ${colors.textMuted}`}>Aguardando análise</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Human Audit Section */}
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className={`p-2 rounded-xl ${darkMode ? 'bg-blue-500/10' : 'bg-blue-50'}`}>
+                      <UserCheck className="w-4 h-4 text-blue-500" />
+                    </div>
+                    <h4 className={`font-bold text-sm ${colors.text}`}>Validação Manual</h4>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleManualStatus(AnalysisStatus.COMPLETED)}
+                        className={`flex-1 py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all font-bold text-xs
+                            ${selectedFolder.status === AnalysisStatus.COMPLETED
+                            ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/20'
+                            : (darkMode ? 'bg-gray-800 text-gray-400 hover:bg-emerald-500/10 hover:text-emerald-400' : 'bg-gray-100 text-gray-500 hover:bg-emerald-50 hover:text-emerald-600')}
+                        `}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" /> APROVAR
+                      </button>
+                      <button
+                        onClick={() => handleManualStatus(AnalysisStatus.PENDING)}
+                        className={`flex-1 py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all font-bold text-xs
+                            ${selectedFolder.status === AnalysisStatus.PENDING
+                            ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/20'
+                            : (darkMode ? 'bg-gray-800 text-gray-400 hover:bg-amber-500/10 hover:text-amber-400' : 'bg-gray-100 text-gray-500 hover:bg-amber-50 hover:text-amber-600')}
+                        `}
+                      >
+                        <AlertCircle className="w-3.5 h-3.5" /> REPROVAR
+                      </button>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className={`w-3.5 h-3.5 ${colors.textMuted}`} />
+                        <label className={`text-[10px] font-bold uppercase ${colors.textMuted}`}>Observações</label>
+                      </div>
+                      <textarea
+                        className={`w-full p-3 text-xs rounded-xl border outline-none min-h-[80px] transition-all focus:ring-2 focus:ring-orange-500/20 resize-none ${darkMode ? 'bg-gray-900 border-gray-800 text-gray-200 placeholder:text-gray-600' : 'bg-gray-50 border-gray-200 text-gray-800 placeholder:text-gray-400'}`}
+                        placeholder="Adicione observações ou motivos..."
+                        value={selectedFolder.observation || ''}
+                        onChange={(e) => updateFolderObservation(selectedFolder.path, e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Equipment Info */}
+                {selectedFolder.equipmentInfo && (
+                  <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-blue-500/5 border-blue-900/30' : 'bg-blue-50/50 border-blue-100'}`}>
+                    <h5 className={`text-[10px] font-bold uppercase text-blue-500 mb-3 flex items-center gap-1`}>
+                      <Info className="w-3 h-3" /> Equipamento
+                    </h5>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <span className={`text-[9px] uppercase ${colors.textMuted} block mb-0.5`}>Modelo</span>
+                        <span className={`text-xs font-medium ${colors.text}`}>{selectedFolder.equipmentInfo.modeloAbrigo || '-'}</span>
+                      </div>
+                      <div>
+                        <span className={`text-[9px] uppercase ${colors.textMuted} block mb-0.5`}>Tipo</span>
+                        <span className={`text-xs font-medium ${colors.text}`}>{selectedFolder.equipmentInfo.tipoEquipamento || '-'}</span>
+                      </div>
+                      <div>
+                        <span className={`text-[9px] uppercase ${colors.textMuted} block mb-0.5`}>Ponto</span>
+                        <span className={`text-xs font-medium ${colors.text}`}>{selectedFolder.equipmentInfo.ponto || '-'}</span>
+                      </div>
+                      <div>
+                        <span className={`text-[9px] uppercase ${colors.textMuted} block mb-0.5`}>Mobiliário</span>
+                        <span className={`text-xs font-medium ${colors.text}`}>{selectedFolder.equipmentInfo.paradaDescricao || '-'}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Empty state for details when no folder selected */}
+        {showDetails && !selectedFolder && (
+          <div className={`w-96 flex flex-col border-l ${colors.border} ${colors.panel} items-center justify-center p-10 text-center`}>
+            <div className={`w-12 h-12 rounded-2xl border-2 border-dashed ${colors.border} mb-4 flex items-center justify-center`}>
+              <ShieldCheck className={`w-6 h-6 ${colors.textMuted}`} />
+            </div>
+            <p className={`text-xs ${colors.textMuted}`}>Selecione um item para ver detalhes.</p>
+          </div>
+        )}
+
+      </div>
+
+      {/* Lightbox */}
       <ImageLightbox
-        images={imageItems}
+        images={selectedImages}
         initialIndex={lightboxIndex}
         isOpen={lightboxOpen}
         onClose={() => setLightboxOpen(false)}
       />
+
     </div>
   );
 };

@@ -11,6 +11,14 @@ export enum AnalysisStatus {
     PENDING = 'PENDING'
 }
 
+export enum RunStatus {
+    IDLE = 'IDLE',
+    RUNNING = 'RUNNING',
+    PAUSED = 'PAUSED',
+    CANCELLED = 'CANCELLED',
+    DONE = 'DONE'
+}
+
 export interface Breadcrumb {
     name: string;
     path: string;
@@ -33,6 +41,7 @@ export interface EquipmentInfo {
     longitude?: number;
     areaTrabalho?: string;
     status?: string;
+    paradaDescricao?: string;
 }
 
 export interface FolderItem {
@@ -42,6 +51,8 @@ export interface FolderItem {
     type: ItemType;
     children: (FolderItem | FileItem)[];
     status: AnalysisStatus;
+    aiResult?: AIAnalysisResult;
+    humanOverride?: Partial<AIAnalysisResult>;
     analysisSummary?: string;
     observation?: string;
     equipmentInfo?: EquipmentInfo;
@@ -68,12 +79,23 @@ export const VERIFICATION_ITEMS: { id: VerificationItemType; label: string }[] =
     { id: 'eletrica', label: 'Elétrica (Alta/Baixa)' }
 ];
 
+export interface ElectricalAnalysis {
+    status: 'CONCLUIDA' | 'NAO_CONCLUIDA';
+    confidence: number;
+    evidence: string[];
+    imagesUsed: number[];
+}
+
 export interface AIAnalysisResult {
     folderName: string;
     status: 'COMPLETED' | 'PENDING';
     selectedFiles: string[];
     reason: string;
     observation?: string;
+    eletrica?: ElectricalAnalysis;
+    restoredFromCache?: boolean;
+    timestamp?: number;
+    runId?: string;
 }
 
 export interface ChatMessage {

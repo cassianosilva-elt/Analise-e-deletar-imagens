@@ -43,7 +43,7 @@ const RelatoriosPage: React.FC<RelatoriosPageProps> = ({ onExportReport, onExpor
     const headerBgClass = darkMode ? 'bg-gray-700/50' : 'bg-gray-50/50';
 
     return (
-        <div className={`flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 ${darkMode ? 'bg-gray-900' : 'bg-[#F8F9FA]'}`}>
+        <div className={`flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 transition-colors duration-300 ${darkMode ? 'bg-gray-950' : 'bg-[#F8F9FA]'}`}>
             <div className="max-w-5xl mx-auto">
                 {/* Header */}
                 <div className="mb-6 sm:mb-8">
@@ -91,14 +91,14 @@ const RelatoriosPage: React.FC<RelatoriosPageProps> = ({ onExportReport, onExpor
 
                     <div className="p-4 sm:p-6 space-y-4">
                         {/* Excel Export */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-green-50 border border-green-100">
+                        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border transition-colors ${darkMode ? 'bg-green-950/20 border-green-900/40' : 'bg-green-50 border-green-100'}`}>
                             <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-green-500 rounded-xl">
+                                <div className="p-2.5 bg-green-500 rounded-xl shadow-sm">
                                     <FileSpreadsheet className="w-5 h-5 text-white" />
                                 </div>
                                 <div>
-                                    <h3 className="font-medium text-gray-900">{translate('excelReport')}</h3>
-                                    <p className="text-xs sm:text-sm text-gray-500">{translate('excelDesc')}</p>
+                                    <h3 className={`font-medium ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{translate('excelReport')}</h3>
+                                    <p className={`text-xs sm:text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{translate('excelDesc')}</p>
                                 </div>
                             </div>
                             <button
@@ -111,14 +111,14 @@ const RelatoriosPage: React.FC<RelatoriosPageProps> = ({ onExportReport, onExpor
                         </div>
 
                         {/* ZIP Export */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-blue-50 border border-blue-100">
+                        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border transition-colors ${darkMode ? 'bg-blue-950/20 border-blue-900/40' : 'bg-blue-50 border-blue-100'}`}>
                             <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-blue-500 rounded-xl">
+                                <div className="p-2.5 bg-blue-500 rounded-xl shadow-sm">
                                     <Archive className="w-5 h-5 text-white" />
                                 </div>
                                 <div>
-                                    <h3 className="font-medium text-gray-900">{translate('zipArchive')}</h3>
-                                    <p className="text-xs sm:text-sm text-gray-500">{translate('zipDesc')}</p>
+                                    <h3 className={`font-medium ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{translate('zipArchive')}</h3>
+                                    <p className={`text-xs sm:text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{translate('zipDesc')}</p>
                                 </div>
                             </div>
                             <button

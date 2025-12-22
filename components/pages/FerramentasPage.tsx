@@ -19,7 +19,7 @@ const FerramentasPage: React.FC<FerramentasPageProps> = ({ onExportReport, darkM
     const descTextClass = darkMode ? 'text-gray-400' : 'text-gray-500';
 
     return (
-        <div className={`flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 ${darkMode ? 'bg-gray-900' : 'bg-[#F8F9FA]'}`}>
+        <div className={`flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 transition-colors duration-300 ${darkMode ? 'bg-gray-950' : 'bg-[#F8F9FA]'}`}>
             <div className="max-w-5xl mx-auto">
                 {/* Header */}
                 <div className="mb-8">
@@ -31,8 +31,8 @@ const FerramentasPage: React.FC<FerramentasPageProps> = ({ onExportReport, darkM
                     {/* Simple Folder Report Card */}
                     <div className={`rounded-xl border shadow-sm p-6 ${cardClass} flex flex-col`}>
                         <div className="flex items-center gap-4 mb-4">
-                            <div className="p-3 bg-purple-100 rounded-lg">
-                                <FileSpreadsheet className="w-6 h-6 text-purple-600" />
+                            <div className={`p-3 rounded-lg ${darkMode ? 'bg-purple-900/40 text-purple-400' : 'bg-purple-100 text-purple-600'}`}>
+                                <FileSpreadsheet className="w-6 h-6" />
                             </div>
                             <div>
                                 <h3 className={`text-lg font-semibold ${headerTextClass}`}>Lista de Pastas</h3>
@@ -57,8 +57,8 @@ const FerramentasPage: React.FC<FerramentasPageProps> = ({ onExportReport, darkM
                     {/* Glass Replacement Report Card */}
                     <div className={`rounded-xl border shadow-sm p-6 ${cardClass} flex flex-col`}>
                         <div className="flex items-center gap-4 mb-4">
-                            <div className="p-3 bg-blue-100 rounded-lg">
-                                <Hammer className="w-6 h-6 text-blue-600" />
+                            <div className={`p-3 rounded-lg ${darkMode ? 'bg-blue-900/40 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
+                                <Hammer className="w-6 h-6" />
                             </div>
                             <div>
                                 <h3 className={`text-lg font-semibold ${headerTextClass}`}>Troca de Vidros</h3>

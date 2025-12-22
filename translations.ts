@@ -16,6 +16,9 @@ export const translations = {
         ajuda: 'Ajuda',
         sectionMain: 'Principal',
         sectionSystem: 'Sistema',
+        sectionUser: 'Usuário',
+        logout: 'Sair da Conta',
+        historico: 'Histórico',
 
         // Settings Page
         settingsTitle: 'Configurações',
@@ -233,6 +236,9 @@ export const translations = {
         ajuda: 'Help',
         sectionMain: 'Main',
         sectionSystem: 'System',
+        sectionUser: 'User',
+        logout: 'Log Out',
+        historico: 'History',
 
         // Settings Page
         settingsTitle: 'Settings',

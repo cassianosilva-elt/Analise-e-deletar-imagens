@@ -1,9 +1,9 @@
 import React from 'react';
-import { LayoutDashboard, Settings, HelpCircle, BarChart3, ChevronRight, PanelLeftClose, PanelLeft, Wrench } from 'lucide-react';
+import { LayoutDashboard, Settings, HelpCircle, BarChart3, ChevronRight, PanelLeftClose, PanelLeft, Wrench, History, LogOut } from 'lucide-react';
 import { PageVisibility } from './pages/ConfiguracoesPage';
 import { TranslationKey } from '../translations';
 
-export type PageId = 'dashboard' | 'relatorios' | 'ferramentas' | 'configuracoes' | 'ajuda';
+export type PageId = 'dashboard' | 'history' | 'relatorios' | 'ferramentas' | 'configuracoes' | 'ajuda';
 
 interface SidebarProps {
   activePage: PageId;
@@ -12,6 +12,8 @@ interface SidebarProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   onNavigateToStart?: () => void;
+  onLogout?: () => void;
+  userEmail?: string;
   darkMode?: boolean;
   t?: (key: TranslationKey) => string;
 }
@@ -48,7 +50,7 @@ const SidebarItem = ({
   </div>
 );
 
-const Sidebar: React.FC<SidebarProps> = ({ activePage, onPageChange, pageVisibility, isCollapsed, onToggleCollapse, onNavigateToStart, darkMode = false, t }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activePage, onPageChange, pageVisibility, isCollapsed, onToggleCollapse, onNavigateToStart, onLogout, userEmail, darkMode = false, t }) => {
   // Fallback translations if t is not provided
   const translate = (key: TranslationKey): string => {
     if (t) return t(key);
@@ -62,11 +64,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, onPageChange, pageVisibil
     return fallbacks[key] || key;
   };
 
-  const bgClass = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-[#1A1A1A] border-[#2A2A2A]';
-  const borderClass = darkMode ? 'border-gray-700' : 'border-[#2A2A2A]';
-  const hoverClass = darkMode ? 'hover:bg-gray-700' : 'hover:bg-[#2A2A2A]';
+  const bgClass = darkMode ? 'bg-gray-900 border-gray-800' : 'bg-[#1A1A1A] border-[#2A2A2A]';
+  const borderClass = darkMode ? 'border-gray-800' : 'border-[#2A2A2A]';
+  const hoverClass = darkMode ? 'hover:bg-gray-800' : 'hover:bg-[#2A2A2A]';
   const sectionTextClass = darkMode ? 'text-gray-500' : 'text-gray-600';
-  const profileBgClass = darkMode ? 'bg-gray-700' : 'bg-[#252525]';
+  const profileBgClass = darkMode ? 'bg-gray-800' : 'bg-[#252525]';
 
   return (
     <div className={`relative ${isCollapsed ? 'w-16' : 'w-52 lg:w-64'} ${bgClass} border-r h-full flex-col hidden md:flex flex-shrink-0 transition-all duration-300`}>
@@ -150,11 +152,29 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, onPageChange, pageVisibil
           collapsed={isCollapsed}
           darkMode={darkMode}
         />
+        <SidebarItem
+          icon={History}
+          label={translate('historico')}
+          active={activePage === 'history'}
+          onClick={() => onPageChange('history')}
+          collapsed={isCollapsed}
+          darkMode={darkMode}
+        />
       </div>
 
       <div className="pb-4 lg:pb-6 space-y-1">
         {!isCollapsed && (
-          <div className={`px-4 lg:px-6 mb-2 text-[10px] lg:text-xs font-semibold ${sectionTextClass} uppercase tracking-wider`}>{translate('sectionSystem')}</div>
+          <div className={`px-4 lg:px-6 mb-2 text-[10px] lg:text-xs font-semibold ${sectionTextClass} uppercase tracking-wider`}>{translate('sectionUser')}</div>
+        )}
+        <SidebarItem
+          icon={LogOut}
+          label={translate('logout')}
+          onClick={() => onLogout?.()}
+          collapsed={isCollapsed}
+          darkMode={darkMode}
+        />
+        {!isCollapsed && (
+          <div className={`px-4 lg:px-6 mb-2 mt-4 text-[10px] lg:text-xs font-semibold ${sectionTextClass} uppercase tracking-wider`}>{translate('sectionSystem')}</div>
         )}
         {pageVisibility.configuracoes && (
           <SidebarItem
@@ -186,8 +206,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, onPageChange, pageVisibil
           </div>
           {!isCollapsed && (
             <div className="ml-2 lg:ml-3 min-w-0">
-              <p className="text-[10px] lg:text-xs font-medium text-white truncate">Supervisor</p>
-              <p className="text-[8px] lg:text-[10px] text-gray-500 truncate">Campanha 39</p>
+              <p className="text-[10px] lg:text-xs font-medium text-white truncate">{userEmail?.split('@')[0] || 'Supervisor'}</p>
+              <p className="text-[8px] lg:text-[10px] text-gray-500 truncate">{userEmail || 'Campanha 39'}</p>
             </div>
           )}
         </div>

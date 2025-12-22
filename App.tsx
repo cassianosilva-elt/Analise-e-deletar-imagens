@@ -16,229 +16,106 @@ import JSZip from 'jszip';
 import { useSettings } from './hooks/useSettings';
 import { naturalCompare } from './utils/sorting';
 import ChatDialog from './components/ChatDialog';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import LoginPage from './components/pages/LoginPage';
+import HistoryPage from './components/pages/HistoryPage';
+import { historyService } from './services/historyService';
+import { useProjectStore } from './store/projectStore';
+import { useUIStore } from './store/uiStore';
+import { useRunStore } from './store/runStore';
+import { runAnalysisQueue, cancelAllAnalysis as cancelCurrentRun } from './services/queueService';
+import { syncService } from './services/syncService';
+import { restoreSession, startAutoSave } from './services/persistenceService';
 
 const App: React.FC = () => {
-  // Settings (dark mode and language)
-  const { language, setLanguage, darkMode, setDarkMode, t } = useSettings();
-
-  // Navigation to start (reset)
-  const handleNavigateToStart = useCallback(() => {
-    setHasData(false);
-    setRootFolder(null);
-    setCurrentPath([]);
-    setSelectedFolders(new Set());
-    setActivePage('dashboard');
-    // Also clear processing states
-    setIsProcessing(false);
-    setShowProgressPanel(false);
-  }, []);
-
-
-  // Onboarding state
-  const [hasData, setHasData] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<GeminiModel>('gemini-flash-latest');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Navigation state
-  const [activePage, setActivePage] = useState<PageId>('dashboard');
-  const [pageVisibility, setPageVisibility] = useState<PageVisibility>({
-    relatorios: true,
-    configuracoes: true,
-    ajuda: true
-  });
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
-  // Folder data state
-  const [rootFolder, setRootFolder] = useState<FolderItem | null>(null);
-  const [currentPath, setCurrentPath] = useState<Breadcrumb[]>([]);
-  const [selectedFolders, setSelectedFolders] = useState<Set<string>>(new Set());
-
-  // AI Processing state
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [currentProcessingFolder, setCurrentProcessingFolder] = useState('');
-  const [processedCount, setProcessedCount] = useState(0);
-  const [showProgressPanel, setShowProgressPanel] = useState(false);
-  const [progressMinimized, setProgressMinimized] = useState(false);
-
-  // Verification items state
-  const [selectedVerificationItems, setSelectedVerificationItems] = useState<VerificationItemType[]>(
-    VERIFICATION_ITEMS.map(item => item.id)
-  );
-
-  // Equipment enrichment state
-  const [isEnrichingEquipment, setIsEnrichingEquipment] = useState(false);
-
-  // Handle page visibility toggle
-  const handleTogglePageVisibility = (pageId: keyof PageVisibility) => {
-    setPageVisibility(prev => ({
-      ...prev,
-      [pageId]: !prev[pageId]
-    }));
-    // If hiding the current page, go back to dashboard
-    if (pageId === activePage && pageVisibility[pageId]) {
-      setActivePage('dashboard');
-    }
-  };
-
-  // Handle model change
-  const handleModelChange = (model: GeminiModel) => {
-    setSelectedModel(model);
-  };
-
-  // Handle items change
-  const handleItemsChange = (items: VerificationItemType[]) => {
-    setSelectedVerificationItems(items);
-  };
-
-  // Process uploaded files into folder structure
-  const processFiles = useCallback((files: FileList | File[]) => {
-    const fileArray = Array.from(files);
-    if (fileArray.length === 0) return;
-
-    const folderMap = new Map<string, FolderItem>();
-    let rootName = '';
-
-    fileArray.forEach(file => {
-      const pathParts = file.webkitRelativePath.split('/');
-      if (!rootName && pathParts.length > 0) {
-        rootName = pathParts[0];
-      }
-
-      let currentPath = '';
-      for (let i = 0; i < pathParts.length - 1; i++) {
-        const part = pathParts[i];
-        const parentPath = currentPath;
-        currentPath = currentPath ? `${currentPath}/${part}` : part;
-
-        if (!folderMap.has(currentPath)) {
-          const newFolder: FolderItem = {
-            id: currentPath,
-            name: part,
-            path: currentPath,
-            type: ItemType.FOLDER,
-            children: [],
-            status: AnalysisStatus.UNCHECKED
-          };
-          folderMap.set(currentPath, newFolder);
-
-          if (parentPath && folderMap.has(parentPath)) {
-            folderMap.get(parentPath)!.children.push(newFolder);
-          }
-        }
-      }
-
-      // Add file to its parent folder
-      const parentPath = pathParts.slice(0, -1).join('/');
-      if (folderMap.has(parentPath)) {
-        const fileItem: FileItem = {
-          name: file.name,
-          path: file.webkitRelativePath,
-          type: file.type.startsWith('image/') ? ItemType.IMAGE : ItemType.FILE,
-          url: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
-          fileObject: file
-        };
-        folderMap.get(parentPath)!.children.push(fileItem);
-      }
-    });
-
-    const root = folderMap.get(rootName);
-    if (root) {
-      // Set folder structure immediately (without equipment data yet)
-      setRootFolder(root);
-      setCurrentPath([{ name: root.name, path: root.path }]);
-      setHasData(true);
-
-      // Enrich folders with equipment data in background
-      enrichFoldersAsync(root);
-    }
-  }, []);
-
-  // Async function to enrich all folders with equipment data
-  const enrichFoldersAsync = async (root: FolderItem) => {
-    setIsEnrichingEquipment(true);
-
-    // Collect all folders to enrich
-    const collectFolders = (folder: FolderItem): FolderItem[] => {
-      const folders: FolderItem[] = [folder];
-      folder.children.forEach(child => {
-        if (child.type === ItemType.FOLDER) {
-          folders.push(...collectFolders(child as FolderItem));
-        }
-      });
-      return folders;
+  useEffect(() => {
+    const init = async () => {
+      await restoreSession();
+      startAutoSave();
+      syncService.startSyncListeners();
     };
-
-    const allFolders = collectFolders(root);
-    // Sort folders naturally to ensure predictable enrichment order
-    allFolders.sort((a, b) => naturalCompare(a.name, b.name));
-    console.log(`[Equipment] Enriching ${allFolders.length} folders...`);
-
-    // Enrich each folder (sequentially to avoid overwhelming API)
-    for (const folder of allFolders) {
-      try {
-        const equipmentInfo = await lookupFromFolderName(folder.name);
-        if (equipmentInfo) {
-          // Update folder with equipment info
-          updateFolderEquipment(folder.path, equipmentInfo);
-        }
-      } catch (error) {
-        console.warn(`[Equipment] Failed to enrich folder ${folder.name}:`, error);
-      }
-    }
-
-    setIsEnrichingEquipment(false);
-    console.log(`[Equipment] Enrichment complete. ${getEquipmentCount()} equipment cached.`);
-  };
-
-  // Update folder with equipment info
-  const updateFolderEquipment = useCallback((folderPath: string, equipmentInfo: EquipmentInfo) => {
-    setRootFolder(currentRoot => {
-      if (!currentRoot) return null;
-
-      const updateRecursive = (folder: FolderItem): FolderItem => {
-        if (folder.path === folderPath) {
-          return {
-            ...folder,
-            equipmentInfo,
-            enrichedAddress: `${equipmentInfo.endereco}, ${equipmentInfo.bairro} - ${equipmentInfo.cidade}/${equipmentInfo.estado}`
-          };
-        }
-        return {
-          ...folder,
-          children: folder.children.map(child =>
-            child.type === ItemType.FOLDER ? updateRecursive(child as FolderItem) : child
-          )
-        };
-      };
-
-      return updateRecursive(currentRoot);
-    });
+    init();
   }, []);
 
-  // Handle folder selection from onboarding
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+};
+
+const AppContent: React.FC = () => {
+  const { user, loading, signOut } = useAuth();
+  const { t, darkMode, setDarkMode, language, setLanguage } = useSettings();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const {
+    progressMinimized,
+    setProgressMinimized,
+    currentPath,
+    setCurrentPath,
+    selectedFolders,
+    toggleFolderSelection,
+    setSelectedFolders,
+    togglePageVisibility,
+    hasData,
+    activePage,
+    setActivePage,
+    resetNavigation,
+    selectedVerificationItems,
+    setSelectedVerificationItems,
+    selectedModel,
+    setSelectedModel,
+    isEnrichingEquipment,
+    showProgressPanel,
+    setShowProgressPanel,
+    sidebarCollapsed,
+    setSidebarCollapsed,
+    pageVisibility
+  } = useUIStore();
+
+  const {
+    rootFolder,
+    processFiles,
+    deleteFolder,
+    deleteEmptyFolders,
+    toggleImageSelection,
+    updateFolderStatus,
+    updateFolderObservation
+  } = useProjectStore();
+
+  const {
+    isProcessing,
+    currentFolder: currentProcessingFolder,
+    processedCount
+  } = useRunStore();
+
+  const handleNavigateToStart = useCallback(() => {
+    resetNavigation();
+    useProjectStore.getState().resetProject();
+    const input = document.getElementById('folder-upload') as HTMLInputElement;
+    if (input) input.value = '';
+  }, [resetNavigation]);
+
   const handleFolderSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
       processFiles(files);
+      event.target.value = '';
     }
   }, [processFiles]);
 
-  // Get current folder items
-  const currentItems = useMemo(() => {
-    if (!rootFolder || currentPath.length === 0) return [];
+  const handleTogglePageVisibility = (pageId: keyof PageVisibility) => {
+    togglePageVisibility(pageId);
+  };
 
-    let current: FolderItem | undefined = rootFolder;
-    for (let i = 1; i < currentPath.length; i++) {
-      const found = current.children.find(
-        child => child.type === ItemType.FOLDER && child.path === currentPath[i].path
-      ) as FolderItem | undefined;
-      if (!found) return [];
-      current = found;
-    }
-    return current?.children || [];
-  }, [rootFolder, currentPath]);
+  const handleModelChange = (model: GeminiModel) => {
+    setSelectedModel(model);
+  };
 
-  // Navigation handlers
+  const handleItemsChange = (items: VerificationItemType[]) => {
+    setSelectedVerificationItems(items);
+  };
+
   const handleNavigate = (folder: FolderItem) => {
     setCurrentPath(prev => [...prev, { name: folder.name, path: folder.path }]);
   };
@@ -249,245 +126,83 @@ const App: React.FC = () => {
     }
   };
 
-  // Folder selection handlers
   const handleToggleFolderSelection = (folderPath: string) => {
-    setSelectedFolders(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(folderPath)) {
-        newSet.delete(folderPath);
-      } else {
-        newSet.add(folderPath);
-      }
-      return newSet;
-    });
+    toggleFolderSelection(folderPath);
   };
 
   const handleSelectAll = () => {
-    const allFolderPaths = currentItems
-      .filter(item => item.type === ItemType.FOLDER)
-      .map(item => item.path);
-    setSelectedFolders(new Set(allFolderPaths));
+    if (!rootFolder) return;
+
+    // Find current folder children
+    let current: FolderItem | undefined = rootFolder;
+    for (let i = 1; i < currentPath.length; i++) {
+      const found = current.children.find(
+        child => child.type === ItemType.FOLDER && child.path === currentPath[i].path
+      ) as FolderItem | undefined;
+      if (!found) break;
+      current = found;
+    }
+
+    if (current) {
+      const allFolderPaths = current.children
+        .filter(item => item.type === ItemType.FOLDER)
+        .map(item => item.path);
+      setSelectedFolders(new Set(allFolderPaths));
+    }
   };
 
   const handleClearSelection = () => {
     setSelectedFolders(new Set());
   };
 
-  // Update folder status in tree
-  const updateFolderStatus = useCallback((folderPath: string, status: AnalysisStatus, summary?: string, observation?: string, selectedFiles?: string[]) => {
-    setRootFolder(currentRoot => {
-      if (!currentRoot) return null;
-
-      const updateRecursive = (folder: FolderItem): FolderItem => {
-        if (folder.path === folderPath) {
-          // If selectedFiles provided, update children
-          let updatedChildren = folder.children;
-          if (selectedFiles) {
-            updatedChildren = folder.children.map(child => {
-              if (child.type === ItemType.IMAGE) {
-                return {
-                  ...child,
-                  selectedByAI: selectedFiles.includes(child.name)
-                };
-              }
-              return child;
-            });
-          }
-
-          return {
-            ...folder,
-            status,
-            analysisSummary: summary,
-            observation: observation || folder.observation,
-            children: updatedChildren
-          };
-        }
-        return {
-          ...folder,
-          children: folder.children.map(child =>
-            child.type === ItemType.FOLDER ? updateRecursive(child as FolderItem) : child
-          )
-        };
-      };
-
-      return updateRecursive(currentRoot);
-    });
-  }, []);
-
-  // Run AI analysis
   const handleRunAI = async () => {
-    if (!rootFolder || isProcessing) return;
+    if (!rootFolder) return;
 
-    const foldersToAnalyze = selectedFolders.size > 0
-      ? Array.from(selectedFolders)
-      : currentItems.filter(item => item.type === ItemType.FOLDER).map(f => f.path);
+    const runStore = useRunStore.getState();
 
-    if (foldersToAnalyze.length === 0) return;
+    // Clear previous run state
+    runStore.resetRun();
 
-    // Sort folders naturally (alphanumeric) to match UI order
-    foldersToAnalyze.sort((a, b) => naturalCompare(a, b));
-
-    setIsProcessing(true);
-    setShowProgressPanel(true);
-    setProcessedCount(0);
-
-    for (const folderPath of foldersToAnalyze) {
-      setCurrentProcessingFolder(folderPath.split('/').pop() || folderPath);
-      updateFolderStatus(folderPath, AnalysisStatus.PROCESSING);
-
-      // Get files from folder
-      const findFolder = (folder: FolderItem): FolderItem | null => {
-        if (folder.path === folderPath) return folder;
-        for (const child of folder.children) {
-          if (child.type === ItemType.FOLDER) {
-            const found = findFolder(child as FolderItem);
-            if (found) return found;
+    // Get all folders to process
+    const collectFolders = (folder: FolderItem): string[] => {
+      const paths: string[] = [];
+      folder.children.forEach(child => {
+        if (child.type === ItemType.FOLDER) {
+          const f = child as FolderItem;
+          // Only add folders that haven't been completed
+          if (f.status !== AnalysisStatus.COMPLETED) {
+            paths.push(f.path);
           }
+          paths.push(...collectFolders(f));
         }
-        return null;
-      };
+      });
+      return paths;
+    };
 
-      const targetFolder = findFolder(rootFolder);
-      if (targetFolder) {
-        const files = targetFolder.children
-          .filter(c => c.type === ItemType.IMAGE && (c as FileItem).fileObject)
-          .map(c => (c as FileItem).fileObject!);
-
-        try {
-          console.log(`[AI] Iniciando análise sequencial da pasta: ${targetFolder.name}`);
-          // Pass equipment info to AI for better context
-          const result = await analyzeFolderImages(
-            targetFolder.name,
-            files,
-            selectedModel,
-            selectedVerificationItems,
-            targetFolder.equipmentInfo
-          );
-          const newStatus = result.status === 'COMPLETED' ? AnalysisStatus.COMPLETED : AnalysisStatus.PENDING;
-          updateFolderStatus(folderPath, newStatus, result.reason, result.observation, result.selectedFiles);
-        } catch (error) {
-          updateFolderStatus(folderPath, AnalysisStatus.PENDING, 'Erro na análise');
-        }
-      }
-
-      setProcessedCount(prev => prev + 1);
+    // Use selected folders or all folders if none selected
+    let foldersToProcess: string[] = [];
+    if (selectedFolders.size > 0) {
+      foldersToProcess = Array.from(selectedFolders);
+    } else {
+      foldersToProcess = collectFolders(rootFolder);
     }
 
-    setIsProcessing(false);
-    setCurrentProcessingFolder('');
-    setSelectedFolders(new Set());
+    if (foldersToProcess.length === 0) {
+      console.log('[Queue] No folders to process');
+      return;
+    }
+
+    // Add folders to queue
+    foldersToProcess.forEach(path => runStore.addToQueue(path));
+
+    // Show progress panel
+    setShowProgressPanel(true);
+
+    // Start processing
+    runAnalysisQueue();
   };
 
-  // Delete folder
-  const handleDeleteFolder = (folderPath: string) => {
-    if (!rootFolder) return;
 
-    const removeFolder = (folder: FolderItem): FolderItem => ({
-      ...folder,
-      children: folder.children
-        .filter(child => child.path !== folderPath)
-        .map(child => child.type === ItemType.FOLDER ? removeFolder(child as FolderItem) : child)
-    });
-
-    setRootFolder(removeFolder(rootFolder));
-  };
-
-  // Delete empty folders (folders without images)
-  const handleDeleteEmptyFolders = () => {
-    if (!rootFolder) return;
-
-    // Helper: check if folder contains any images (directly or in subfolders)
-    const hasImages = (folder: FolderItem): boolean => {
-      return folder.children.some(child => {
-        if (child.type === ItemType.IMAGE) return true;
-        if (child.type === ItemType.FOLDER) return hasImages(child as FolderItem);
-        return false;
-      });
-    };
-
-    // Recursively remove folders without images
-    const removeEmpty = (folder: FolderItem): FolderItem => {
-      // First, process all subfolders recursively
-      const processedChildren = folder.children.map(child =>
-        child.type === ItemType.FOLDER ? removeEmpty(child as FolderItem) : child
-      );
-
-      // Then filter out folders that have no images
-      const filteredChildren = processedChildren.filter(child => {
-        if (child.type === ItemType.FOLDER) {
-          return hasImages(child as FolderItem);
-        }
-        return true; // Keep all non-folder items (images, files)
-      });
-
-      return { ...folder, children: filteredChildren };
-    };
-
-    const updatedRoot = removeEmpty(rootFolder);
-    const removedCount = countFolders(rootFolder) - countFolders(updatedRoot);
-
-    setRootFolder(updatedRoot);
-
-    // Log for debugging
-    console.log(`Pastas vazias removidas: ${removedCount}`);
-  };
-
-  // Helper to count folders
-  const countFolders = (folder: FolderItem): number => {
-    let count = 0;
-    folder.children.forEach(child => {
-      if (child.type === ItemType.FOLDER) {
-        count += 1 + countFolders(child as FolderItem);
-      }
-    });
-    return count;
-  };
-
-  // Manual status change
-  const handleManualStatusChange = (folderPath: string, status: AnalysisStatus) => {
-    updateFolderStatus(folderPath, status);
-  };
-
-  // Toggle image selection
-  const handleToggleImageSelection = (imagePath: string) => {
-    if (!rootFolder) return;
-
-    const toggleImage = (folder: FolderItem): FolderItem => ({
-      ...folder,
-      children: folder.children.map(child => {
-        if (child.type === ItemType.FOLDER) {
-          return toggleImage(child as FolderItem);
-        }
-        if (child.path === imagePath) {
-          return { ...child, selectedByAI: !(child as FileItem).selectedByAI };
-        }
-        return child;
-      })
-    });
-
-    setRootFolder(toggleImage(rootFolder));
-  };
-
-  // Update folder observation
-  const handleUpdateObservation = (folderPath: string, observation: string) => {
-    setRootFolder(currentRoot => {
-      if (!currentRoot) return null;
-
-      const updateRecursive = (folder: FolderItem): FolderItem => {
-        if (folder.path === folderPath) {
-          return { ...folder, observation };
-        }
-        return {
-          ...folder,
-          children: folder.children.map(child =>
-            child.type === ItemType.FOLDER ? updateRecursive(child as FolderItem) : child
-          )
-        };
-      };
-
-      return updateRecursive(currentRoot);
-    });
-  };
 
   // Export to Excel
   const handleExportReport = async (type: 'analysis' | 'simple' | 'glass' = 'analysis') => {
@@ -778,6 +493,19 @@ const App: React.FC = () => {
     return context;
   }, [currentFolderInfo]);
 
+  // Render login if not authenticated
+  if (loading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-gray-950' : 'bg-[#FAFAFA]'}`}>
+        <div className="w-10 h-10 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginPage darkMode={darkMode} t={t} />;
+  }
+
   // Render onboarding if no data
   if (!hasData) {
     return (
@@ -799,7 +527,7 @@ const App: React.FC = () => {
 
   // Render main app with sidebar navigation
   return (
-    <div className={`h-screen flex font-['Rethink_Sans'] transition-colors duration-300 ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+    <div className={`h-screen flex font-['Rethink_Sans'] transition-colors duration-300 ${darkMode ? 'bg-gray-950' : 'bg-white'}`}>
       <Sidebar
         activePage={activePage}
         onPageChange={setActivePage}
@@ -807,11 +535,13 @@ const App: React.FC = () => {
         isCollapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         onNavigateToStart={handleNavigateToStart}
+        onLogout={signOut}
+        userEmail={user.email}
         darkMode={darkMode}
         t={t}
       />
 
-      <div className={`flex-1 flex flex-col overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-gray-900' : 'bg-[#F8F9FA]'}`}>
+      <div className={`flex-1 flex flex-col overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-gray-950' : 'bg-[#F8F9FA]'}`}>
         {activePage === 'dashboard' && (
           <>
             <TopBar
@@ -828,7 +558,7 @@ const App: React.FC = () => {
               onRunAI={handleRunAI}
               onExportReport={handleExportReport}
               onExportSelectedZip={handleExportZip}
-              onDeleteEmptyFolders={handleDeleteEmptyFolders}
+              onDeleteEmptyFolders={deleteEmptyFolders}
               onSelectAll={handleSelectAll}
               onClearSelection={handleClearSelection}
               isProcessing={isProcessing}
@@ -840,25 +570,15 @@ const App: React.FC = () => {
               darkMode={darkMode}
               t={t}
             />
-            <MainView
-              items={currentItems}
-              onNavigate={handleNavigate}
-              onDeleteFolder={handleDeleteFolder}
-              onToggleFolderSelection={handleToggleFolderSelection}
-              onManualStatusChange={handleManualStatusChange}
-              onToggleImageSelection={handleToggleImageSelection}
-              onUpdateObservation={handleUpdateObservation}
-              selectedFolders={selectedFolders}
-              currentFolderStatus={currentFolderInfo.status}
-              currentFolderReason={currentFolderInfo.reason}
-              currentFolderObservation={currentFolderInfo.observation}
-              currentFolderPath={currentFolderInfo.path}
-              currentFolderEquipmentInfo={currentFolderInfo.equipmentInfo}
-              currentFolderEnrichedAddress={currentFolderInfo.enrichedAddress}
-              darkMode={darkMode}
-              t={t}
-            />
+            <MainView />
           </>
+        )}
+
+        {activePage === 'history' && (
+          <HistoryPage
+            darkMode={darkMode}
+            t={t}
+          />
         )}
 
         {activePage === 'relatorios' && (
@@ -923,11 +643,13 @@ const App: React.FC = () => {
         pendingCount={stats.pendingFolders}
         onClose={() => setShowProgressPanel(false)}
         onToggle={() => setProgressMinimized(!progressMinimized)}
+        onCancel={cancelCurrentRun}
         isMinimized={progressMinimized}
+        darkMode={darkMode}
         t={t}
       />
 
-      <ChatDialog context={chatContext} />
+      <ChatDialog context={chatContext} darkMode={darkMode} />
     </div>
   );
 };

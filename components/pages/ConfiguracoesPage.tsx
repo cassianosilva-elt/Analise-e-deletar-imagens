@@ -76,7 +76,7 @@ const ConfiguracoesPage: React.FC<ConfiguracoesPageProps> = ({
         : 'bg-gray-50/50 border-gray-100';
 
     return (
-        <div className={`flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 ${darkMode ? 'bg-gray-900' : 'bg-[#F8F9FA]'}`}>
+        <div className={`flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 transition-colors duration-300 ${darkMode ? 'bg-gray-950' : 'bg-[#F8F9FA]'}`}>
             <div className="max-w-3xl mx-auto">
                 {/* Header */}
                 <div className="mb-6 sm:mb-8">
@@ -149,16 +149,16 @@ const ConfiguracoesPage: React.FC<ConfiguracoesPageProps> = ({
                             <button
                                 onClick={() => onLanguageChange('pt')}
                                 className={`flex-1 flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all ${language === 'pt'
-                                        ? 'border-[#FF4D00] bg-orange-50 dark:bg-orange-900/20'
-                                        : darkMode
-                                            ? 'border-gray-600 hover:border-gray-500'
-                                            : 'border-gray-200 hover:border-gray-300'
+                                    ? 'border-[#FF4D00] bg-orange-50 dark:bg-orange-900/20'
+                                    : darkMode
+                                        ? 'border-gray-600 hover:border-gray-500'
+                                        : 'border-gray-200 hover:border-gray-300'
                                     }`}
                             >
                                 <span className="text-2xl">🇧🇷</span>
                                 <span className={`font-medium ${language === 'pt'
-                                        ? 'text-[#FF4D00]'
-                                        : darkMode ? 'text-gray-100' : 'text-gray-900'
+                                    ? 'text-[#FF4D00]'
+                                    : darkMode ? 'text-gray-100' : 'text-gray-900'
                                     }`}>
                                     {t('portuguese')}
                                 </span>
@@ -172,16 +172,16 @@ const ConfiguracoesPage: React.FC<ConfiguracoesPageProps> = ({
                             <button
                                 onClick={() => onLanguageChange('en')}
                                 className={`flex-1 flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all ${language === 'en'
-                                        ? 'border-[#FF4D00] bg-orange-50 dark:bg-orange-900/20'
-                                        : darkMode
-                                            ? 'border-gray-600 hover:border-gray-500'
-                                            : 'border-gray-200 hover:border-gray-300'
+                                    ? 'border-[#FF4D00] bg-orange-50 dark:bg-orange-900/20'
+                                    : darkMode
+                                        ? 'border-gray-600 hover:border-gray-500'
+                                        : 'border-gray-200 hover:border-gray-300'
                                     }`}
                             >
                                 <span className="text-2xl">🇺🇸</span>
                                 <span className={`font-medium ${language === 'en'
-                                        ? 'text-[#FF4D00]'
-                                        : darkMode ? 'text-gray-100' : 'text-gray-900'
+                                    ? 'text-[#FF4D00]'
+                                    : darkMode ? 'text-gray-100' : 'text-gray-900'
                                     }`}>
                                     {t('english')}
                                 </span>
@@ -247,10 +247,10 @@ const ConfiguracoesPage: React.FC<ConfiguracoesPageProps> = ({
                         <button
                             onClick={() => onModelChange('gemini-flash-latest')}
                             className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${selectedModel === 'gemini-flash-latest'
-                                    ? 'border-[#FF4D00] bg-orange-50 dark:bg-orange-900/20'
-                                    : darkMode
-                                        ? 'border-gray-600 hover:border-gray-500'
-                                        : 'border-gray-200 hover:border-gray-300'
+                                ? 'border-[#FF4D00] bg-orange-50 dark:bg-orange-900/20'
+                                : darkMode
+                                    ? 'border-gray-600 hover:border-gray-500'
+                                    : 'border-gray-200 hover:border-gray-300'
                                 }`}
                         >
                             <div className={`p-2.5 rounded-xl ${selectedModel === 'gemini-flash-latest' ? 'bg-[#FF4D00]' : darkMode ? 'bg-gray-600' : 'bg-gray-200'
@@ -276,10 +276,10 @@ const ConfiguracoesPage: React.FC<ConfiguracoesPageProps> = ({
                         <button
                             onClick={() => onModelChange('gemini-flash-lite-latest')}
                             className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${selectedModel === 'gemini-flash-lite-latest'
-                                    ? 'border-[#FF4D00] bg-orange-50 dark:bg-orange-900/20'
-                                    : darkMode
-                                        ? 'border-gray-600 hover:border-gray-500'
-                                        : 'border-gray-200 hover:border-gray-300'
+                                ? 'border-[#FF4D00] bg-orange-50 dark:bg-orange-900/20'
+                                : darkMode
+                                    ? 'border-gray-600 hover:border-gray-500'
+                                    : 'border-gray-200 hover:border-gray-300'
                                 }`}
                         >
                             <div className={`p-2.5 rounded-xl ${selectedModel === 'gemini-flash-lite-latest' ? 'bg-[#FF4D00]' : darkMode ? 'bg-gray-600' : 'bg-gray-200'

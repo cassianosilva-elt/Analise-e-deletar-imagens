@@ -70,11 +70,11 @@ const TopBar: React.FC<TopBarProps> = ({
   };
 
   // Dark mode classes
-  const bgClass = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+  const bgClass = darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200';
   const textClass = darkMode ? 'text-gray-200' : 'text-gray-700';
-  const breadcrumbBgClass = darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200';
-  const hoverClass = darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100';
-  const buttonBgClass = darkMode ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' : 'bg-white border-gray-300 hover:bg-gray-50';
+  const breadcrumbBgClass = darkMode ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-700';
+  const hoverClass = darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100';
+  const buttonBgClass = darkMode ? 'bg-gray-800 border-gray-700 hover:bg-gray-700 text-gray-300' : 'bg-white border-gray-300 hover:bg-gray-50 text-gray-700';
 
   return (
     <div className={`${bgClass} border-b z-10 transition-colors duration-300`}>
@@ -102,12 +102,12 @@ const TopBar: React.FC<TopBarProps> = ({
           {/* Counts - Desktop */}
           {totalFolders > 0 && (
             <div className="hidden md:flex items-center gap-2 ml-3">
-              <div className="flex items-center px-2 py-1 bg-purple-50 text-purple-700 rounded-md border border-purple-200 text-xs font-medium">
+              <div className={`flex items-center px-2 py-1 rounded-md border text-xs font-medium ${darkMode ? 'bg-purple-900/40 text-purple-300 border-purple-800/50' : 'bg-purple-50 text-purple-700 border-purple-200'}`}>
                 <FolderOpen className="w-3 h-3 mr-1" />
                 {totalFolders}
               </div>
               {selectedCount > 0 && (
-                <div className="flex items-center px-2 py-1 bg-blue-50 text-blue-700 rounded-md border border-blue-200 text-xs font-semibold">
+                <div className={`flex items-center px-2 py-1 rounded-md border text-xs font-semibold ${darkMode ? 'bg-blue-900/40 text-blue-300 border-blue-800/50' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
                   <CheckSquare className="w-3 h-3 mr-1" />
                   {selectedCount}
                 </div>
@@ -118,12 +118,12 @@ const TopBar: React.FC<TopBarProps> = ({
           {/* Equipment Cache Status - Desktop */}
           <div className="hidden lg:flex items-center ml-2">
             {equipmentCacheReady ? (
-              <div className="flex items-center px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md border border-emerald-200 text-xs font-medium" title={`${equipmentCount.toLocaleString()} ${translate('loadedEquipments')}`}>
+              <div className={`flex items-center px-2 py-1 rounded-md border text-xs font-medium ${darkMode ? 'bg-emerald-900/40 text-emerald-300 border-emerald-800/50' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`} title={`${equipmentCount.toLocaleString()} ${translate('loadedEquipments')}`}>
                 <Database className="w-3 h-3 mr-1" />
                 {equipmentCount.toLocaleString()}
               </div>
             ) : (
-              <div className="flex items-center px-2 py-1 bg-gray-50 text-gray-500 rounded-md border border-gray-200 text-xs font-medium animate-pulse">
+              <div className={`flex items-center px-2 py-1 rounded-md border text-xs font-medium animate-pulse ${darkMode ? 'bg-gray-800 text-gray-500 border-gray-700' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
                 <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                 {translate('loading')}
               </div>
@@ -136,11 +136,11 @@ const TopBar: React.FC<TopBarProps> = ({
           {/* Mobile counts */}
           {totalFolders > 0 && (
             <div className="flex md:hidden items-center gap-1">
-              <div className="px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded text-xs font-medium">
+              <div className={`px-1.5 py-0.5 rounded text-xs font-medium ${darkMode ? 'bg-purple-900/40 text-purple-300' : 'bg-purple-50 text-purple-700'}`}>
                 {totalFolders}
               </div>
               {selectedCount > 0 && (
-                <div className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-bold">
+                <div className={`px-1.5 py-0.5 rounded text-xs font-bold ${darkMode ? 'bg-blue-900/40 text-blue-300' : 'bg-blue-50 text-blue-700'}`}>
                   {selectedCount}
                 </div>
               )}
@@ -163,9 +163,9 @@ const TopBar: React.FC<TopBarProps> = ({
           {/* Mobile Menu Toggle */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className={`lg:hidden p-1.5 sm:p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
           >
-            {mobileMenuOpen ? <X className="w-5 h-5 text-gray-600" /> : <Menu className="w-5 h-5 text-gray-600" />}
+            {mobileMenuOpen ? <X className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} /> : <Menu className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />}
           </button>
 
           {/* Desktop Actions */}
@@ -177,7 +177,7 @@ const TopBar: React.FC<TopBarProps> = ({
               <>
                 <button
                   onClick={onSelectAll}
-                  className="flex items-center px-2.5 py-1.5 text-xs font-medium text-purple-600 bg-white border border-purple-200 rounded-lg hover:bg-purple-50 transition-all"
+                  className={`flex items-center px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-all ${darkMode ? 'text-purple-400 bg-gray-800 border-purple-900/50 hover:bg-gray-700' : 'text-purple-600 bg-white border-purple-200 hover:bg-purple-50'}`}
                   title={translate('selectAll')}
                 >
                   <CheckSquare className="w-3.5 h-3.5 mr-1.5" />
@@ -186,7 +186,7 @@ const TopBar: React.FC<TopBarProps> = ({
                 {selectedCount > 0 && (
                   <button
                     onClick={onClearSelection}
-                    className="flex items-center px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
+                    className={`flex items-center px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-all ${darkMode ? 'text-gray-400 bg-gray-800 border-gray-700 hover:bg-gray-700' : 'text-gray-600 bg-white border-gray-300 hover:bg-gray-50'}`}
                     title={translate('clearSelection')}
                   >
                     <Square className="w-3.5 h-3.5 mr-1.5" />
@@ -196,11 +196,11 @@ const TopBar: React.FC<TopBarProps> = ({
               </>
             )}
 
-            <div className="w-px h-6 bg-gray-200" />
+            <div className={`w-px h-6 ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`} />
 
             <button
               onClick={onOpenFolder}
-              className="flex items-center px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
+              className={`flex items-center px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-all ${darkMode ? 'text-gray-300 bg-gray-800 border-gray-700 hover:bg-gray-700' : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50'}`}
             >
               <FolderOpen className="w-3.5 h-3.5 mr-1.5" />
               {translate('importBtn')}
@@ -208,7 +208,7 @@ const TopBar: React.FC<TopBarProps> = ({
 
             <button
               onClick={onDeleteEmptyFolders}
-              className="flex items-center px-2.5 py-1.5 text-xs font-medium text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-all"
+              className={`flex items-center px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-all ${darkMode ? 'text-red-400 bg-gray-800 border-red-900/50 hover:bg-gray-700' : 'text-red-600 bg-white border-red-200 hover:bg-red-50'}`}
               title={translate('deleteEmpty')}
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -217,7 +217,7 @@ const TopBar: React.FC<TopBarProps> = ({
             {/* Excel Button - Now Single Again */}
             <button
               onClick={() => onExportReport('analysis')}
-              className="flex items-center px-2.5 py-1.5 text-xs font-medium text-green-600 bg-white border border-green-200 rounded-lg hover:bg-green-50 transition-all"
+              className={`flex items-center px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-all ${darkMode ? 'text-green-400 bg-gray-800 border-green-900/50 hover:bg-gray-700' : 'text-green-600 bg-white border-green-200 hover:bg-green-50'}`}
               title={translate('exportReport')}
             >
               <FileSpreadsheet className="w-3.5 h-3.5" />
@@ -227,7 +227,7 @@ const TopBar: React.FC<TopBarProps> = ({
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setZipDropdownOpen(!zipDropdownOpen)}
-                className={`flex items-center px-2.5 py-1.5 text-xs font-medium border rounded-lg transition-all ${zipDropdownOpen ? 'text-[#FF4D00] bg-orange-50 border-[#FF4D00]' : 'text-blue-600 bg-white border-blue-200 hover:bg-blue-50'
+                className={`flex items-center px-2.5 py-1.5 text-xs font-medium border rounded-lg transition-all ${zipDropdownOpen ? (darkMode ? 'text-[#FF4D00] bg-orange-950 border-[#FF4D00]' : 'text-[#FF4D00] bg-orange-50 border-[#FF4D00]') : (darkMode ? 'text-blue-400 bg-gray-800 border-blue-900/50 hover:bg-gray-700' : 'text-blue-600 bg-white border-blue-200 hover:bg-blue-50')
                   }`}
                 title={translate('downloadZip')}
               >
@@ -235,35 +235,35 @@ const TopBar: React.FC<TopBarProps> = ({
               </button>
 
               {zipDropdownOpen && (
-                <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
-                  <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">{translate('exportPhotos')}</div>
+                <div className={`absolute right-0 top-full mt-2 w-56 rounded-xl shadow-xl border p-4 z-50 animate-in fade-in zoom-in-95 duration-200 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+                  <div className={`text-xs font-bold uppercase tracking-wider mb-3 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>{translate('exportPhotos')}</div>
 
                   <div className="space-y-2 mb-4">
                     <label
-                      className="flex items-center p-2.5 hover:bg-orange-50 rounded-lg cursor-pointer transition-colors group select-none"
+                      className={`flex items-center p-2.5 rounded-lg cursor-pointer transition-colors group select-none ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-orange-50'}`}
                       onClick={(e) => { e.preventDefault(); toggleZipStatus(AnalysisStatus.COMPLETED); }}
                     >
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center mr-3 transition-all ${zipStatuses.includes(AnalysisStatus.COMPLETED) ? 'bg-[#FF4D00] border-[#FF4D00]' : 'border-gray-300 group-hover:border-[#FF4D00]'
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center mr-3 transition-all ${zipStatuses.includes(AnalysisStatus.COMPLETED) ? 'bg-[#FF4D00] border-[#FF4D00]' : (darkMode ? 'border-gray-700' : 'border-gray-300') + ' group-hover:border-[#FF4D00]'
                         }`}>
                         {zipStatuses.includes(AnalysisStatus.COMPLETED) && <Check className="w-3.5 h-3.5 text-white" />}
                       </div>
                       <div>
-                        <span className="block text-sm font-medium text-gray-700">{translate('completed')}</span>
-                        <span className="block text-[10px] text-gray-400">{translate('finishedFolders')}</span>
+                        <span className={`block text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{translate('completed')}</span>
+                        <span className={`block text-[10px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{translate('finishedFolders')}</span>
                       </div>
                     </label>
 
                     <label
-                      className="flex items-center p-2.5 hover:bg-orange-50 rounded-lg cursor-pointer transition-colors group select-none"
+                      className={`flex items-center p-2.5 rounded-lg cursor-pointer transition-colors group select-none ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-orange-50'}`}
                       onClick={(e) => { e.preventDefault(); toggleZipStatus(AnalysisStatus.PENDING); }}
                     >
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center mr-3 transition-all ${zipStatuses.includes(AnalysisStatus.PENDING) ? 'bg-[#FF4D00] border-[#FF4D00]' : 'border-gray-300 group-hover:border-[#FF4D00]'
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center mr-3 transition-all ${zipStatuses.includes(AnalysisStatus.PENDING) ? 'bg-[#FF4D00] border-[#FF4D00]' : (darkMode ? 'border-gray-700' : 'border-gray-300') + ' group-hover:border-[#FF4D00]'
                         }`}>
                         {zipStatuses.includes(AnalysisStatus.PENDING) && <Check className="w-3.5 h-3.5 text-white" />}
                       </div>
                       <div>
-                        <span className="block text-sm font-medium text-gray-700">{translate('pending')}</span>
-                        <span className="block text-[10px] text-gray-400">{translate('foldersInAnalysis')}</span>
+                        <span className={`block text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{translate('pending')}</span>
+                        <span className={`block text-[10px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{translate('foldersInAnalysis')}</span>
                       </div>
                     </label>
                   </div>
@@ -285,13 +285,13 @@ const TopBar: React.FC<TopBarProps> = ({
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-gray-100 px-3 py-3 bg-gray-50/50">
+        <div className={`lg:hidden border-t px-3 py-3 transition-colors ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-gray-50/50 border-gray-100'}`}>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {totalFolders > 0 && (
               <>
                 <button
                   onClick={() => { onSelectAll(); setMobileMenuOpen(false); }}
-                  className="flex items-center justify-center px-3 py-2 text-xs font-medium text-purple-600 bg-white border border-purple-200 rounded-lg hover:bg-purple-50"
+                  className={`flex items-center justify-center px-3 py-2 text-xs font-medium rounded-lg border transition-all ${darkMode ? 'text-purple-400 bg-gray-800 border-purple-900/50 hover:bg-gray-700' : 'text-purple-600 bg-white border-purple-200 hover:bg-purple-50'}`}
                 >
                   <CheckSquare className="w-4 h-4 mr-1.5" />
                   {translate('allBtn')}
@@ -299,7 +299,7 @@ const TopBar: React.FC<TopBarProps> = ({
                 {selectedCount > 0 && (
                   <button
                     onClick={() => { onClearSelection(); setMobileMenuOpen(false); }}
-                    className="flex items-center justify-center px-3 py-2 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                    className={`flex items-center justify-center px-3 py-2 text-xs font-medium rounded-lg border transition-all ${darkMode ? 'text-gray-400 bg-gray-800 border-gray-700 hover:bg-gray-700' : 'text-gray-600 bg-white border-gray-300 hover:bg-gray-50'}`}
                   >
                     <Square className="w-4 h-4 mr-1.5" />
                     {translate('clearBtn')}
@@ -310,7 +310,7 @@ const TopBar: React.FC<TopBarProps> = ({
 
             <button
               onClick={() => { onOpenFolder(); setMobileMenuOpen(false); }}
-              className="flex items-center justify-center px-3 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              className={`flex items-center justify-center px-3 py-2 text-xs font-medium rounded-lg border transition-all ${darkMode ? 'text-gray-300 bg-gray-800 border-gray-700 hover:bg-gray-700' : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50'}`}
             >
               <FolderOpen className="w-4 h-4 mr-1.5" />
               {translate('importBtn')}
@@ -318,7 +318,7 @@ const TopBar: React.FC<TopBarProps> = ({
 
             <button
               onClick={() => { onDeleteEmptyFolders(); setMobileMenuOpen(false); }}
-              className="flex items-center justify-center px-3 py-2 text-xs font-medium text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50"
+              className={`flex items-center justify-center px-3 py-2 text-xs font-medium rounded-lg border transition-all ${darkMode ? 'text-red-400 bg-gray-800 border-red-900/50 hover:bg-gray-700' : 'text-red-600 bg-white border-red-200 hover:bg-red-50'}`}
             >
               <Trash2 className="w-4 h-4 mr-1.5" />
               {translate('emptyBtn')}
@@ -327,7 +327,7 @@ const TopBar: React.FC<TopBarProps> = ({
             {/* Mobile Excel Button */}
             <button
               onClick={() => { onExportReport('analysis'); setMobileMenuOpen(false); }}
-              className="flex items-center justify-center px-3 py-2 text-xs font-medium text-green-600 bg-white border border-green-200 rounded-lg hover:bg-green-50"
+              className={`flex items-center justify-center px-3 py-2 text-xs font-medium rounded-lg border transition-all ${darkMode ? 'text-green-400 bg-gray-800 border-green-900/50 hover:bg-gray-700' : 'text-green-600 bg-white border-green-200 hover:bg-green-50'}`}
             >
               <FileSpreadsheet className="w-4 h-4 mr-1.5" />
               Excel
@@ -335,7 +335,7 @@ const TopBar: React.FC<TopBarProps> = ({
 
             <button
               onClick={() => { onExportSelectedZip([AnalysisStatus.COMPLETED]); setMobileMenuOpen(false); }}
-              className="flex items-center justify-center px-3 py-2 text-xs font-medium text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-50"
+              className={`flex items-center justify-center px-3 py-2 text-xs font-medium rounded-lg border transition-all ${darkMode ? 'text-blue-400 bg-gray-800 border-blue-900/50 hover:bg-gray-700' : 'text-blue-600 bg-white border-blue-200 hover:bg-blue-50'}`}
             >
               <Archive className="w-4 h-4 mr-1.5" />
               ZIP
